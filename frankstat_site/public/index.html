@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Granstat - Prime Brand Solutions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['Space Grotesk', 'sans-serif'],
+                        body: ['DM Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        slate: {
+                            950: '#0a0f1a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg: #0a0f1a;
+            --bg-elevated: #111827;
+            --fg: #f8fafc;
+            --muted: #94a3b8;
+            --accent: #ff6b4a;
+            --accent-hover: #ff8266;
+            --card: #1e293b;
+            --border: #334155;
+            --success: #22c55e;
+        }
+        
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) var(--bg);
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+        }
+        
+        .font-display {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        
+        /* Hero Background */
+        .hero-bg {
+            background: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 107, 74, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                linear-gradient(180deg, var(--bg) 0%, var(--bg-elevated) 100%);
+        }
+        
+        /* Floating particles */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(30px, -30px) rotate(90deg); }
+            50% { transform: translate(-20px, -60px) rotate(180deg); }
+            75% { transform: translate(-40px, -30px) rotate(270deg); }
+        }
+        
+        /* Reveal animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Stagger children */
+        .stagger-children > * {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        
+        .stagger-children.active > *:nth-child(1) { transition-delay: 0.1s; }
+        .stagger-children.active > *:nth-child(2) { transition-delay: 0.2s; }
+        .stagger-children.active > *:nth-child(3) { transition-delay: 0.3s; }
+        .stagger-children.active > *:nth-child(4) { transition-delay: 0.4s; }
+        .stagger-children.active > *:nth-child(5) { transition-delay: 0.5s; }
+        .stagger-children.active > *:nth-child(6) { transition-delay: 0.6s; }
+        .stagger-children.active > *:nth-child(7) { transition-delay: 0.7s; }
+        .stagger-children.active > *:nth-child(8) { transition-delay: 0.8s; }
+        
+        .stagger-children.active > * {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Service card hover */
+        .service-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(255, 107, 74, 0.15);
+            border-color: var(--accent);
+        }
+        
+        .service-card .icon-wrapper {
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+        
+        .service-card:hover .icon-wrapper {
+            transform: scale(1.1);
+            background: var(--accent);
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+        
+        /* Button styles */
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+        
+        .btn-primary:hover::before {
+            transform: translateX(100%);
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 107, 74, 0.3);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+        
+        /* Form inputs */
+        .form-input {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--fg);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(255, 107, 74, 0.1);
+        }
+        
+        .form-input::placeholder {
+            color: var(--muted);
+        }
+        
+        /* Size option */
+        .size-option {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .size-option:hover {
+            border-color: var(--accent);
+        }
+        
+        .size-option.selected {
+            border-color: var(--accent);
+            background: rgba(255, 107, 74, 0.1);
+        }
+        
+        /* File upload */
+        .file-upload {
+            border: 2px dashed var(--border);
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload:hover, .file-upload.dragover {
+            border-color: var(--accent);
+            background: rgba(255, 107, 74, 0.05);
+        }
+        
+        /* Offer banner */
+        .offer-banner {
+            background: linear-gradient(90deg, var(--accent), #ff8c42);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        /* Testimonial card */
+        .testimonial-card {
+            transition: transform 0.3s ease;
+        }
+        
+        .testimonial-card:hover {
+            transform: scale(1.02);
+        }
+        
+        /* Nav scroll state */
+        .nav-scrolled {
+            background: rgba(10, 15, 26, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Mobile menu */
+        .mobile-menu {
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .mobile-menu.active {
+            transform: translateX(0);
+        }
+        
+        /* Counter animation */
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .count-up {
+            animation: countUp 0.5s ease forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Navigation -->
+    <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 sm:h-20">
+                <!-- Logo -->
+                <a href="#" class="flex items-center gap-2 sm:gap-3">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-[#ff6b4a] to-[#ff8c42] flex items-center justify-center">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="font-display font-bold text-lg sm:text-xl text-white">Granstat</span>
+                        <span class="hidden sm:block text-xs text-[#94a3b8]">Prime Brand Solutions</span>
+                    </div>
+                </a>
+                
+                <!-- Desktop Nav -->
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#services" class="text-[#94a3b8] hover:text-white transition-colors text-sm font-medium">Services</a>
+                    <a href="#pricing" class="text-[#94a3b8] hover:text-white transition-colors text-sm font-medium">Pricing</a>
+                    <a href="#reviews" class="text-[#94a3b8] hover:text-white transition-colors text-sm font-medium">Reviews</a>
+                    <a href="#contact" class="text-[#94a3b8] hover:text-white transition-colors text-sm font-medium">Contact</a>
+                    <button onclick="openModal('banners')" class="btn-primary px-5 py-2.5 rounded-lg font-semibold text-sm">
+                        Get Quote
+                    </button>
+                </div>
+                
+                <!-- Mobile menu button -->
+                <button id="menuBtn" class="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Toggle menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div id="mobileMenu" class="mobile-menu fixed inset-y-0 right-0 w-64 bg-[#111827] md:hidden z-50 p-6 shadow-2xl">
+            <button onclick="closeMobileMenu()" class="absolute top-4 right-4 p-2 rounded-lg hover:bg-white/10" aria-label="Close menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            <div class="flex flex-col gap-4 mt-12">
+                <a href="#services" onclick="closeMobileMenu()" class="text-[#94a3b8] hover:text-white transition-colors py-2">Services</a>
+                <a href="#pricing" onclick="closeMobileMenu()" class="text-[#94a3b8] hover:text-white transition-colors py-2">Pricing</a>
+                <a href="#reviews" onclick="closeMobileMenu()" class="text-[#94a3b8] hover:text-white transition-colors py-2">Reviews</a>
+                <a href="#contact" onclick="closeMobileMenu()" class="text-[#94a3b8] hover:text-white transition-colors py-2">Contact</a>
+                <button onclick="openModal('banners'); closeMobileMenu();" class="btn-primary px-5 py-3 rounded-lg font-semibold mt-4">
+                    Get Quote
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Offer Banner -->
+    <div class="offer-banner py-2.5 px-4 text-center text-white font-medium text-sm sm:text-base mt-16 sm:mt-20">
+        <span class="inline-flex items-center gap-2">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clip-rule="evenodd"/>
+            </svg>
+            <span>First-time customers get 15% off on all orders over KSh 5,000! Use code: <strong>GRANSTAT15</strong></span>
+        </span>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero-bg relative min-h-[90vh] flex items-center overflow-hidden">
+        <!-- Floating particles -->
+        <div class="absolute inset-0 pointer-events-none">
+            <div class="particle w-64 h-64 bg-gradient-to-br from-[#ff6b4a]/10 to-transparent top-20 -left-32" style="animation-delay: 0s;"></div>
+            <div class="particle w-96 h-96 bg-gradient-to-br from-indigo-500/5 to-transparent bottom-20 -right-48" style="animation-delay: -5s;"></div>
+            <div class="particle w-48 h-48 bg-gradient-to-br from-[#ff6b4a]/5 to-transparent top-1/2 left-1/3" style="animation-delay: -10s;"></div>
+        </div>
+        
+        <!-- Grid pattern -->
+        <div class="absolute inset-0 opacity-[0.03]" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;1&quot;%3E%3Cpath d=&quot;M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div class="reveal">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
+                        <span class="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse"></span>
+                        <span class="text-sm text-[#94a3b8]">Trusted by 500+ businesses in Kenya</span>
+                    </div>
+                    
+                    <h1 class="font-display font-bold text-4xl sm:text-5xl lg:text-6xl text-white leading-tight mb-6">
+                        Premium Printing
+                        <span class="block text-transparent bg-clip-text bg-gradient-to-r from-[#ff6b4a] to-[#ff8c42]">Solutions</span>
+                    </h1>
+                    
+                    <p class="text-lg sm:text-xl text-[#94a3b8] mb-8 max-w-lg">
+                        From large format banners to business cards, we bring your brand to life with precision printing and fast turnaround.
+                    </p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button onclick="openModal('banners')" class="btn-primary px-8 py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-2">
+                            <span>Start Your Order</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                            </svg>
+                        </button>
+                        <a href="#services" class="px-8 py-4 rounded-xl font-semibold text-lg border border-white/20 hover:bg-white/5 transition-colors flex items-center justify-center gap-2">
+                            <span>View Services</span>
+                        </a>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div class="grid grid-cols-3 gap-6 mt-12 pt-12 border-t border-white/10">
+                        <div>
+                            <div class="font-display font-bold text-2xl sm:text-3xl text-white">10K+</div>
+                            <div class="text-sm text-[#94a3b8]">Orders Completed</div>
+                        </div>
+                        <div>
+                            <div class="font-display font-bold text-2xl sm:text-3xl text-white">24hr</div>
+                            <div class="text-sm text-[#94a3b8]">Turnaround</div>
+                        </div>
+                        <div>
+                            <div class="font-display font-bold text-2xl sm:text-3xl text-white">99%</div>
+                            <div class="text-sm text-[#94a3b8]">Satisfaction</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hero Image/Visual -->
+                <div class="reveal relative hidden lg:block" style="transition-delay: 0.2s;">
+                    <div class="relative">
+                        <!-- Main card -->
+                        <div class="absolute inset-0 bg-gradient-to-br from-[#ff6b4a]/20 to-transparent rounded-3xl blur-3xl"></div>
+                        <div class="relative bg-gradient-to-br from-[#1e293b] to-[#0f172a] rounded-3xl p-8 border border-white/10">
+                            <div class="aspect-square rounded-2xl bg-gradient-to-br from-[#ff6b4a]/10 to-indigo-500/10 flex items-center justify-center mb-6 overflow-hidden">
+                                <!-- Printer illustration -->
+                                <svg class="w-48 h-48 text-[#ff6b4a]/30" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                                </svg>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="h-3 bg-white/10 rounded-full w-3/4"></div>
+                                <div class="h-3 bg-white/5 rounded-full w-1/2"></div>
+                                <div class="flex items-center gap-2 mt-4">
+                                    <span class="w-2 h-2 rounded-full bg-[#22c55e]"></span>
+                                    <span class="text-sm text-[#94a3b8]">Ready to print</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Floating elements -->
+                        <div class="absolute -top-4 -right-4 bg-[#ff6b4a] text-white px-4 py-2 rounded-xl font-display font-bold shadow-lg transform rotate-3">
+                            DTF NoCut
+                        </div>
+                        <div class="absolute -bottom-4 -left-4 bg-[#1e293b] border border-white/10 text-white px-4 py-2 rounded-xl shadow-lg transform -rotate-3">
+                            <span class="text-[#22c55e] font-bold">Fast</span> Delivery
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Scroll indicator -->
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+            <svg class="w-6 h-6 text-[#94a3b8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+            </svg>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="py-20 sm:py-32 relative">
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent via-[#ff6b4a]/5 to-transparent pointer-events-none"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 reveal">
+                <span class="inline-block px-4 py-2 rounded-full bg-[#ff6b4a]/10 text-[#ff6b4a] font-medium text-sm mb-4">Our Services</span>
+                <h2 class="font-display font-bold text-3xl sm:text-4xl lg:text-5xl text-white mb-4">
+                    Everything You Need to Print
+                </h2>
+                <p class="text-[#94a3b8] text-lg max-w-2xl mx-auto">
+                    From concept to creation, we offer comprehensive printing services tailored to your brand's needs.
+                </p>
+            </div>
+            
+            <div id="servicesGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 stagger-children">
+                <!-- Service cards will be rendered by JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Preview Section -->
+    <section id="pricing" class="py-20 sm:py-32 bg-gradient-to-b from-[#0a0f1a] to-[#111827]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 reveal">
+                <span class="inline-block px-4 py-2 rounded-full bg-[#22c55e]/10 text-[#22c55e] font-medium text-sm mb-4">Transparent Pricing</span>
+                <h2 class="font-display font-bold text-3xl sm:text-4xl lg:text-5xl text-white mb-4">
+                    Competitive Rates
+                </h2>
+                <p class="text-[#94a3b8] text-lg max-w-2xl mx-auto">
+                    Quality printing doesn't have to break the bank. Check our starting prices below.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 stagger-children" id="pricingGrid">
+                <!-- Pricing cards will be rendered by JS -->
+            </div>
+            
+            <div class="text-center mt-12 reveal">
+                <p class="text-[#94a3b8] mb-4">Need custom dimensions or bulk orders?</p>
+                <button onclick="openModal('banners')" class="btn-primary px-8 py-4 rounded-xl font-semibold">
+                    Get Custom Quote
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reviews Section -->
+    <section id="reviews" class="py-20 sm:py-32 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-r from-[#ff6b4a]/5 via-transparent to-indigo-500/5 pointer-events-none"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 reveal">
+                <span class="inline-block px-4 py-2 rounded-full bg-[#ff6b4a]/10 text-[#ff6b4a] font-medium text-sm mb-4">Customer Reviews</span>
+                <h2 class="font-display font-bold text-3xl sm:text-4xl lg:text-5xl text-white mb-4">
+                    What Our Clients Say
+                </h2>
+                <p class="text-[#94a3b8] text-lg max-w-2xl mx-auto">
+                    Don't just take our word for it. Here's what businesses across Kenya have to say about our services.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-6 stagger-children" id="reviewsGrid">
+                <!-- Reviews will be rendered by JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 sm:py-32">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="reveal relative rounded-3xl overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-[#ff6b4a] to-[#ff8c42]"></div>
+                <div class="absolute inset-0 opacity-20" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%23000000&quot; fill-opacity=&quot;0.4&quot;%3E%3Cpath d=&quot;M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+                
+                <div class="relative px-8 py-16 sm:px-16 sm:py-20 text-center">
+                    <h2 class="font-display font-bold text-3xl sm:text-4xl lg:text-5xl text-white mb-6">
+                        Ready to Start Printing?
+                    </h2>
+                    <p class="text-white/80 text-lg max-w-2xl mx-auto mb-8">
+                        Get your quote in minutes. Upload your design, choose your specs, and pay via M-Pesa. It's that simple.
+                    </p>
+                    <button onclick="openModal('banners')" class="bg-white text-[#ff6b4a] px-8 py-4 rounded-xl font-bold text-lg hover:bg-white/90 transition-colors inline-flex items-center gap-2">
+                        <span>Order Now</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="bg-[#0a0f1a] border-t border-white/10 pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+                <!-- Brand -->
+                <div class="lg:col-span-2">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[#ff6b4a] to-[#ff8c42] flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="font-display font-bold text-xl text-white">Granstat</span>
+                            <span class="block text-xs text-[#94a3b8]">Prime Brand Solutions Limited</span>
+                        </div>
+                    </div>
+                    <p class="text-[#94a3b8] max-w-md mb-6">
+                        Your trusted partner for all printing needs in Kenya. Quality materials, fast turnaround, and competitive prices.
+                    </p>
+                    <div class="flex gap-4">
+                        <a href="#" class="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center" aria-label="Facebook">
+                            <svg class="w-5 h-5 text-[#94a3b8]" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center" aria-label="Instagram">
+                            <svg class="w-5 h-5 text-[#94a3b8]" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center" aria-label="WhatsApp">
+                            <svg class="w-5 h-5 text-[#94a3b8]" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Quick Links -->
+                <div>
+                    <h4 class="font-display font-semibold text-white mb-4">Quick Links</h4>
+                    <ul class="space-y-3">
+                        <li><a href="#services" class="text-[#94a3b8] hover:text-white transition-colors">Services</a></li>
+                        <li><a href="#pricing" class="text-[#94a3b8] hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#reviews" class="text-[#94a3b8] hover:text-white transition-colors">Reviews</a></li>
+                        <li><a href="#" class="text-[#94a3b8] hover:text-white transition-colors">FAQs</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Contact -->
+                <div>
+                    <h4 class="font-display font-semibold text-white mb-4">Contact Us</h4>
+                    <ul class="space-y-3">
+                        <li class="flex items-center gap-2 text-[#94a3b8]">
+                            <svg class="w-5 h-5 text-[#ff6b4a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            <span>Nairobi, Kenya</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-[#94a3b8]">
+                            <svg class="w-5 h-5 text-[#ff6b4a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                            </svg>
+                            <span>+254 700 000 000</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-[#94a3b8]">
+                            <svg class="w-5 h-5 text-[#ff6b4a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                            <span>info@granstat.co.ke</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-[#94a3b8] text-sm">
+                    &copy; 2024 Granstat Prime Brand Solutions Limited. All rights reserved.
+                </p>
+                <div class="flex gap-6 text-sm">
+                    <a href="#" class="text-[#94a3b8] hover:text-white transition-colors">Privacy Policy</a>
+                    <a href="#" class="text-[#94a3b8] hover:text-white transition-colors">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Order Modal -->
+    <div id="orderModal" class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="modal-content bg-[#111827] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl">
+            <!-- Modal Header -->
+            <div class="sticky top-0 bg-[#111827] border-b border-white/10 px-6 py-4 flex items-center justify-between z-10">
+                <h3 id="modalTitle" class="font-display font-bold text-xl text-white">Order</h3>
+                <button onclick="closeModal()" class="p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Close modal">
+                    <svg class="w-5 h-5 text-[#94a3b8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6">
+                <form id="orderForm" class="space-y-6">
+                    <!-- Size Selection (for banners/posters) -->
+                    <div id="sizeSection" class="hidden">
+                        <label class="block text-sm font-medium text-white mb-3">Select Size</label>
+                        <div id="sizeOptions" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <!-- Sizes will be rendered by JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Quantity -->
+                    <div>
+                        <label class="block text-sm font-medium text-white mb-3">Quantity</label>
+                        <div class="flex items-center gap-4">
+                            <button type="button" onclick="updateQuantity(-1)" class="w-12 h-12 rounded-lg bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center border border-white/10">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+                                </svg>
+                            </button>
+                            <input type="number" id="quantity" value="1" min="1" class="form-input w-24 h-12 rounded-lg text-center font-display font-bold text-lg" onchange="calculateTotal()">
+                            <button type="button" onclick="updateQuantity(1)" class="w-12 h-12 rounded-lg bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center border border-white/10">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Image Upload -->
+                    <div>
+                        <label class="block text-sm font-medium text-white mb-3">Upload Your Design</label>
+                        <div id="dropZone" class="file-upload rounded-xl p-8 text-center cursor-pointer">
+                            <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                            <div id="uploadPlaceholder">
+                                <svg class="w-12 h-12 text-[#94a3b8] mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                </svg>
+                                <p class="text-[#94a3b8] mb-2">Drag and drop your image here, or</p>
+                                <span class="text-[#ff6b4a] font-medium">browse files</span>
+                                <p class="text-[#94a3b8] text-sm mt-2">PNG, JPG, PDF up to 10MB</p>
+                            </div>
+                            <div id="uploadPreview" class="hidden">
+                                <img id="previewImage" class="max-h-40 mx-auto rounded-lg mb-2" alt="Preview">
+                                <p id="fileName" class="text-[#94a3b8] text-sm"></p>
+                                <button type="button" onclick="clearFile()" class="text-[#ff6b4a] text-sm mt-2 hover:underline">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- M-Pesa Phone -->
+                    <div>
+                        <label class="block text-sm font-medium text-white mb-3">M-Pesa Phone Number</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]">+254</span>
+                            <input type="tel" id="phone" placeholder="7XX XXX XXX" class="form-input w-full h-12 rounded-lg pl-16" pattern="[0-9]{9}" maxlength="9">
+                        </div>
+                        <p class="text-[#94a3b8] text-sm mt-2">Payment will be processed via M-Pesa STK Push</p>
+                    </div>
+                    
+                    <!-- Price Summary -->
+                    <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[#94a3b8]">Unit Price</span>
+                            <span id="unitPrice" class="text-white font-medium">KSh 0</span>
+                        </div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[#94a3b8]">Quantity</span>
+                            <span id="summaryQty" class="text-white font-medium">1</span>
+                        </div>
+                        <div class="border-t border-white/10 pt-2 mt-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-white font-semibold">Total</span>
+                                <span id="totalPrice" class="text-[#ff6b4a] font-display font-bold text-xl">KSh 0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn-primary w-full py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <span>Pay with M-Pesa</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== DATA ====================
+        const services = [
+            {
+                id: 'banners',
+                name: 'Banners',
+                description: 'Large format printing for outdoor and indoor advertising',
+                icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`,
+                hasSizes: true,
+                sizes: [
+                    { name: 'A4', dimensions: '21 x 29.7 cm', price: 500 },
+                    { name: 'A3', dimensions: '29.7 x 42 cm', price: 800 },
+                    { name: 'A2', dimensions: '42 x 59.4 cm', price: 1200 },
+                    { name: 'A1', dimensions: '59.4 x 84 cm', price: 2000 },
+                    { name: 'A0', dimensions: '84 x 118.9 cm', price: 3500 },
+                    { name: 'Custom', dimensions: 'Contact us', price: 0 }
+                ]
+            },
+            {
+                id: 'posters',
+                name: 'Posters',
+                description: 'High-quality posters for promotions and events',
+                icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>`,
+                hasSizes: true,
+                sizes: [
+                    { name: 'A4', dimensions: '21 x 29.7 cm', price: 300 },
+                    { name: 'A3', dimensions: '29.7 x 42 cm', price: 500 },
+                    { name: 'A2', dimensions: '42 x 59.4 cm', price: 800 },
+                    { name: 'A1', dimensions: '59.4 x 84 cm', price: 1500 },
+                    { name: 'A0', dimensions: '84 x 118.9 cm', price: 2500 },
+                    { name: 'Custom', dimensions: 'Contact us', price: 0 }
+                ]
+            },
+            {
+                id: 'business-cards',
+                name: 'Business Cards',
+                description: 'Professional cards that make a lasting impression',
+                icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>`,
+                hasSizes: false,
+                unitPrice: 50
+            },
+            {
+                id: 'heat-press',
+                name: 'Heat Press',
+                description: 'Custom heat press transfers for apparel and merchandise',
+                icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"/></svg>`,
+                hasSizes: false,
+                unitPrice: 200
+            },
+            {
+                id: 'sublimation',
+                name: 'Sublimation',
+                description: 'Full-color sublimation printing on various substrates',
+                icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>`,
+                hasSizes: false,
+                unitPrice: 350
+            },
+            {
+                id: 'plotting-vinyl',
+                name: 'Plotting & Vinyl Cutting',
+                description: 'Precision vinyl cutting for stickers and decals',
+                icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z"/></svg>`,
+                hasSizes: false,
+                unitPrice: 150
+            },
+            {
+                id: 'signage',
+                name: '2D & 3D Signage',
+                description: 'Eye-catching signage for businesses and events',
+                icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>`,
+                hasSizes: false,
+                unitPrice: 5000
+            },
+            {
+                id: 'dtf-nocut',
+                name: 'DTF NoCut',
+                description: 'Direct-to-film printing with no weeding required',
+                icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`,
+                hasSizes: false,
+                unitPrice: 250
+            }
+        ];
+
+        const reviews = [
+            {
+                name: 'Grace Wanjiku',
+                role: 'Marketing Director',
+                company: 'TechVentures Kenya',
+                rating: 5,
+                text: 'Granstat delivered our event banners in just 24 hours. The quality was exceptional and the colors were vibrant. Highly recommend!'
+            },
+            {
+                name: 'James Ochieng',
+                role: 'Small Business Owner',
+                company: 'Ochieng Electronics',
+                rating: 5,
+                text: 'I have been ordering business cards from Granstat for 2 years now. Consistent quality and their M-Pesa payment is super convenient.'
+            },
+            {
+                name: 'Fatima Hassan',
+                role: 'Event Coordinator',
+                company: 'Nairobi Events Co.',
+                rating: 5,
+                text: 'The 3D signage they created for our conference was stunning. Professional team and very responsive to our custom requests.'
+            }
+        ];
+
+        const pricingPreview = [
+            { service: 'Business Cards', price: 'KSh 50', unit: 'per card' },
+            { service: 'Posters', price: 'KSh 300', unit: 'from A4' },
+            { service: 'Heat Press', price: 'KSh 200', unit: 'per transfer' },
+            { service: 'DTF NoCut', price: 'KSh 250', unit: 'per print' }
+        ];
+
+        // ==================== STATE ====================
+        let currentService = null;
+        let selectedSize = null;
+        let quantity = 1;
+        let uploadedFile = null;
+
+        // ==================== DOM READY ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            renderServices();
+            renderPricing();
+            renderReviews();
+            initScrollReveal();
+            initNavbar();
+            initMobileMenu();
+            initDropZone();
+            initForm();
+        });
+
+        // ==================== RENDER FUNCTIONS ====================
+        function renderServices() {
+            const grid = document.getElementById('servicesGrid');
+            if (!grid) return;
+            
+            grid.innerHTML = services.map(service => `
+                <div class="service-card bg-[#1e293b] rounded-2xl p-6 border border-white/5 cursor-pointer" onclick="openModal('${service.id}')">
+                    <div class="icon-wrapper w-14 h-14 rounded-xl bg-[#ff6b4a]/10 text-[#ff6b4a] flex items-center justify-center mb-4">
+                        ${service.icon}
+                    </div>
+                    <h3 class="font-display font-semibold text-lg text-white mb-2">${service.name}</h3>
+                    <p class="text-[#94a3b8] text-sm mb-4">${service.description}</p>
+                    <div class="flex items-center text-[#ff6b4a] text-sm font-medium">
+                        <span>Order Now</span>
+                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderPricing() {
+            const grid = document.getElementById('pricingGrid');
+            if (!grid) return;
+            
+            grid.innerHTML = pricingPreview.map(item => `
+                <div class="bg-[#1e293b] rounded-xl p-6 border border-white/5">
+                    <h4 class="text-[#94a3b8] text-sm mb-2">${item.service}</h4>
+                    <div class="font-display font-bold text-2xl text-white mb-1">${item.price}</div>
+                    <div class="text-[#94a3b8] text-sm">${item.unit}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderReviews() {
+            const grid = document.getElementById('reviewsGrid');
+            if (!grid) return;
+            
+            grid.innerHTML = reviews.map(review => `
+                <div class="testimonial-card bg-[#1e293b] rounded-2xl p-6 border border-white/5">
+                    <div class="flex items-center gap-1 mb-4">
+                        ${Array(review.rating).fill().map(() => `
+                            <svg class="w-5 h-5 text-[#ff6b4a]" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                            </svg>
+                        `).join('')}
+                    </div>
+                    <p class="text-[#94a3b8] mb-6">"${review.text}"</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff6b4a] to-[#ff8c42] flex items-center justify-center text-white font-bold">
+                            ${review.name.charAt(0)}
+                        </div>
+                        <div>
+                            <div class="text-white font-medium text-sm">${review.name}</div>
+                            <div class="text-[#94a3b8] text-xs">${review.role}, ${review.company}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ==================== MODAL FUNCTIONS ====================
+        function openModal(serviceId) {
+            currentService = services.find(s => s.id === serviceId);
+            if (!currentService) return;
+
+            const modal = document.getElementById('orderModal');
+            const title = document.getElementById('modalTitle');
+            const sizeSection = document.getElementById('sizeSection');
+            
+            title.textContent = `Order ${currentService.name}`;
+            
+            // Reset form
+            selectedSize = null;
+            quantity = 1;
+            uploadedFile = null;
+            document.getElementById('quantity').value = 1;
+            document.getElementById('phone').value = '';
+            clearFile();
+            
+            // Show/hide size section
+            if (currentService.hasSizes) {
+                sizeSection.classList.remove('hidden');
+                renderSizeOptions();
+            } else {
+                sizeSection.classList.add('hidden');
+            }
+            
+            calculateTotal();
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('orderModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function renderSizeOptions() {
+            const container = document.getElementById('sizeOptions');
+            if (!container || !currentService) return;
+            
+            container.innerHTML = currentService.sizes.map((size, index) => `
+                <div class="size-option border border-white/10 rounded-xl p-4 text-center ${selectedSize === index ? 'selected' : ''}" 
+                     onclick="selectSize(${index})" 
+                     tabindex="0" 
+                     role="radio" 
+                     aria-checked="${selectedSize === index}">
+                    <div class="font-display font-bold text-white">${size.name}</div>
+                    <div class="text-[#94a3b8] text-xs mt-1">${size.dimensions}</div>
+                    <div class="text-[#ff6b4a] font-medium text-sm mt-2">${size.price > 0 ? 'KSh ' + size.price.toLocaleString() : 'Contact'}</div>
+                </div>
+            `).join('');
+        }
+
+        function selectSize(index) {
+            selectedSize = index;
+            renderSizeOptions();
+            calculateTotal();
+        }
+
+        // ==================== CALCULATION ====================
+        function updateQuantity(delta) {
+            const input = document.getElementById('quantity');
+            let newValue = Math.max(1, parseInt(input.value || 1) + delta);
+            input.value = newValue;
+            quantity = newValue;
+            calculateTotal();
+        }
+
+        function calculateTotal() {
+            const qty = parseInt(document.getElementById('quantity').value) || 1;
+            quantity = qty;
+            
+            let unitPrice = 0;
+            
+            if (currentService) {
+                if (currentService.hasSizes && selectedSize !== null) {
+                    unitPrice = currentService.sizes[selectedSize].price;
+                } else if (!currentService.hasSizes) {
+                    unitPrice = currentService.unitPrice;
+                }
+            }
+            
+            const total = unitPrice * qty;
+            
+            document.getElementById('unitPrice').textContent = `KSh ${unitPrice.toLocaleString()}`;
+            document.getElementById('summaryQty').textContent = qty;
+            document.getElementById('totalPrice').textContent = `KSh ${total.toLocaleString()}`;
+        }
+
+        // ==================== FILE UPLOAD ====================
+        function initDropZone() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            
+            if (!dropZone || !fileInput) return;
+            
+            dropZone.addEventListener('click', () => fileInput.click());
+            
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+        }
+
+        function handleFileSelect(event) {
+            if (event.target.files.length) {
+                handleFile(event.target.files[0]);
+            }
+        }
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file');
+                return;
+            }
+            
+            uploadedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('previewImage').src = e.target.result;
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+                document.getElementById('uploadPreview').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearFile() {
+            uploadedFile = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            document.getElementById('uploadPreview').classList.add('hidden');
+        }
+
+        // ==================== FORM SUBMISSION ====================
+        function initForm() {
+            const form = document.getElementById('orderForm');
+            if (!form) return;
+            
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const phone = document.getElementById('phone').value;
+                
+                if (!phone || phone.length < 9) {
+                    alert('Please enter a valid M-Pesa phone number');
+                    return;
+                }
+                
+                if (!uploadedFile) {
+                    alert('Please upload your design file');
+                    return;
+                }
+                
+                if (currentService && currentService.hasSizes && selectedSize === null) {
+                    alert('Please select a size');
+                    return;
+                }
+                
+                // Prepare order data for backend
+                const orderData = {
+                    service: currentService.id,
+                    serviceName: currentService.name,
+                    size: currentService.hasSizes && selectedSize !== null ? currentService.sizes[selectedSize] : null,
+                    quantity: quantity,
+                    phone: '+254' + phone,
+                    total: parseInt(document.getElementById('totalPrice').textContent.replace(/[^\d]/g, '')),
+                    file: uploadedFile
+                };
+                
+                console.log('Order Data:', orderData);
+                
+                // Here you would send to your backend
+                alert(`Order submitted! You will receive an M-Pesa prompt on +254${phone}`);
+                closeModal();
+            });
+        }
+
+        // ==================== SCROLL REVEAL ====================
+        function initScrollReveal() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                    }
+                });
+            }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+            
+            document.querySelectorAll('.reveal, .stagger-children').forEach(el => {
+                observer.observe(el);
+            });
+        }
+
+        // ==================== NAVBAR ====================
+        function initNavbar() {
+            const navbar = document.getElementById('navbar');
+            let lastScroll = 0;
+            
+            window.addEventListener('scroll', () => {
+                const currentScroll = window.pageYOffset;
+                
+                if (currentScroll > 50) {
+                    navbar.classList.add('nav-scrolled');
+                } else {
+                    navbar.classList.remove('nav-scrolled');
+                }
+                
+                lastScroll = currentScroll;
+            });
+        }
+
+        // ==================== MOBILE MENU ====================
+        function initMobileMenu() {
+            const menuBtn = document.getElementById('menuBtn');
+            
+            if (menuBtn) {
+                menuBtn.addEventListener('click', () => {
+                    document.getElementById('mobileMenu').classList.add('active');
+                });
+            }
+        }
+
+        function closeMobileMenu() {
+            document.getElementById('mobileMenu').classList.remove('active');
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                closeMobileMenu();
+            }
+        });
+
+        // Close modal on backdrop click
+        document.getElementById('orderModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
