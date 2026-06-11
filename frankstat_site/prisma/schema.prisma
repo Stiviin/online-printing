@@ -1,0 +1,270 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                String          @id @default(cuid())
+  fullName          String
+  email             String          @unique
+  phone             String?         @unique
+  passwordHash      String
+  isVerified        Boolean         @default(false)
+  verifyToken       String?         @unique
+  verifyTokenExpiry DateTime?
+  resetToken        String?         @unique
+  resetTokenExpiry  DateTime?
+  role              UserRole        @default(CUSTOMER)
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  lastLoginAt       DateTime?
+  auditLogs         AuditLog[]
+  discountUsages    DiscountUsage[]
+  notifications     Notification[]
+  orders            Orders[]
+  tickets           SupportTicket[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+}
+
+model Orders {
+  id                String               @id @default(cuid())
+  userId            String?
+  serviceId         String
+  serviceName       String
+  dimensions        String?
+  quantity          Int                  @default(1)
+  finishType        String?
+  specialNotes      String?
+  unitPrice         Float
+  totalPrice        Float
+  depositAmount     Float
+  balanceDue        Float
+  artworkUrl        String
+  artworkFilename   String?
+  mpesaPhone        String
+  merchantRequestID String?
+  checkoutRequestID String?              @unique
+  mpesaReceipt      String?              @unique
+  status            OrderStatus          @default(PENDING_PAYMENT)
+  assignedTo        String?
+  expectedReadyAt   DateTime?
+  completedAt       DateTime?
+  discountCode      String?
+  discountAmount    Float?               @default(0)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  attachments       OrderAttachment[]
+  statusHistory     OrderStatusHistory[]
+  user              User?                @relation(fields: [userId], references: [id])
+  payments          Payment[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([checkoutRequestID])
+  @@index([createdAt])
+}
+
+model OrderStatusHistory {
+  id         String       @id @default(cuid())
+  orderId    String
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  changedBy  String?
+  note       String?
+  createdAt  DateTime     @default(now())
+  order      Orders       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model OrderAttachment {
+  id        String   @id @default(cuid())
+  orderId   String
+  url       String
+  filename  String
+  mimeType  String
+  sizeBytes Int
+  createdAt DateTime @default(now())
+  order     Orders   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  orderId           String
+  type              PaymentType
+  amount            Float
+  method            String
+  mpesaRef          String?       @unique
+  mpesaPhone        String?
+  checkoutRequestID String?
+  status            PaymentStatus @default(PENDING)
+  failReason        String?
+  recordedBy        String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  order             Orders        @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([status])
+  @@index([mpesaRef])
+}
+
+model Discount {
+  id             String          @id @default(cuid())
+  code           String          @unique
+  description    String?
+  type           DiscountType
+  value          Float
+  minOrderAmount Float?
+  maxUses        Int?
+  usedCount      Int             @default(0)
+  validFrom      DateTime?
+  validUntil     DateTime?
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  usages         DiscountUsage[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+model DiscountUsage {
+  id         String   @id @default(cuid())
+  discountId String
+  userId     String?
+  orderId    String   @unique
+  usedAt     DateTime @default(now())
+  discount   Discount @relation(fields: [discountId], references: [id])
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([discountId])
+  @@index([userId])
+}
+
+model SupportTicket {
+  id          String       @id @default(cuid())
+  userId      String?
+  orderId     String?
+  subject     String
+  message     String
+  status      TicketStatus @default(OPEN)
+  response    String?
+  respondedBy String?
+  respondedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User?        @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([orderId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  link      String?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+model SiteBanner {
+  id        String   @id @default(cuid())
+  isActive  Boolean  @default(false)
+  items     Json     // string[] — the ticker messages
+  updatedAt DateTime @updatedAt
+  updatedBy String?  // userId of last admin who saved
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+enum UserRole {
+  CUSTOMER
+  STAFF
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  IN_PRODUCTION
+  QUALITY_CHECK
+  READY
+  DELIVERING
+  COMPLETED
+  PAYMENT_FAILED
+  PAYMENT_ERROR
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentType {
+  DEPOSIT
+  BALANCE
+  FULL
+  REFUND
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum NotificationType {
+  ORDER_CONFIRMED
+  ORDER_READY
+  ORDER_DELIVERING
+  ORDER_COMPLETED
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  TICKET_RESPONSE
+  GENERAL
+}

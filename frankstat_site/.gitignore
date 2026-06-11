@@ -42,6 +42,27 @@ next-env.d.ts
 
 /app/generated/prisma
 
-/prisma
+# Prisma SQLite dev database
+prisma/dev.db
+prisma/dev.db-journal
 
-.frankstat_db.sql
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.suo
+*.swp
+
+# Local uploads (if you store any files locally before Blob upload)
+/public/uploads/
+
+# Logs
+logs/
+*.log
+
+# OS temp
+*.tmp
