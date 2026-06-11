@@ -83,7 +83,7 @@ function Modal({title,onClose,children,wide}:{title:string;onClose:()=>void;chil
     <div style={{position:"fixed",inset:0,background:"rgba(15,12,8,0.6)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16,backdropFilter:"blur(4px)"}} onClick={onClose}>
       <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:wide?760:520,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 24px 60px rgba(0,0,0,0.25)"}} onClick={e=>e.stopPropagation()}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"16px 24px",borderBottom:"1px solid #EDE8E0",position:"sticky",top:0,background:"#fff",zIndex:1,borderRadius:"14px 14px 0 0"}}>
-          <h3 style={{fontFamily:"'Syne',sans-serif",fontSize:"1rem",fontWeight:800,color:"#1C1410"}}>{title}</h3>
+          <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:"1rem",fontWeight:800,color:"#1C1410"}}>{title}</h3>
           <button onClick={onClose} style={{background:"#F5F0EA",border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:"1rem",color:"#6B7280",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
         </div>
         <div style={{padding:"20px 24px"}}>{children}</div>
@@ -111,6 +111,8 @@ export default function AdminDashboard() {
   const [tab, setTab]       = useState<Tab>("overview");
   const [toast, setToast]   = useState<{msg:string;type:"ok"|"err"}|null>(null);
   const showToast = useCallback((msg:string,type:"ok"|"err"="ok")=>setToast({msg,type}),[]);
+  const [confirmDlg, setConfirmDlg] = useState<{icon:string;title:string;body:string;confirmLabel:string;danger:boolean;onConfirm:()=>void}|null>(null);
+  const askConfirm = (opts:{icon:string;title:string;body:string;confirmLabel:string;danger?:boolean;onConfirm:()=>void})=>setConfirmDlg({...opts,danger:opts.danger??false});
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(()=>{
@@ -259,19 +261,43 @@ export default function AdminDashboard() {
       const url = isCreate ? "/api/admin/users" : `/api/admin/users/${userModal?.user?.id}`;
       const method = isCreate ? "POST" : "PATCH";
       const r = await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-      const d = await r.json();
+      const d = await r.json().catch(()=>({}));
       if(!r.ok){showToast(d.error??"Save failed","err");return;}
       showToast(isCreate?"Staff account created.":"User updated.");
       setUserModal(null); fetchUsers();
     }finally{setUSaving(false);}
   };
 
-  const deactivateUser = async(id:string)=>{
-    if(!confirm("Deactivate this account? They will be unable to log in."))return;
-    const r=await fetch(`/api/admin/users/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({isActive:false})});
-    if(r.ok){showToast("Account deactivated.");fetchUsers();}
-    else showToast((await r.json()).error??"Failed","err");
-  };
+  const deactivateUser = (id:string)=>askConfirm({
+    icon:"🔒", title:"Deactivate account?", body:"This user will be unable to log in until reactivated.",
+    confirmLabel:"Deactivate", danger:false,
+    onConfirm: async()=>{
+      const r=await fetch(`/api/admin/users/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({isActive:false})});
+      if(r.ok){showToast("Account deactivated.");fetchUsers();}
+      else showToast((await r.json()).error??"Failed","err");
+    }
+  });
+
+  const activateUser = (id:string)=>askConfirm({
+    icon:"🔓", title:"Activate account?", body:"This user will be able to log in again.",
+    confirmLabel:"Activate", danger:false,
+    onConfirm: async()=>{
+      const r=await fetch(`/api/admin/users/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({isActive:true})});
+      if(r.ok){showToast("Account activated.");fetchUsers();}
+      else showToast((await r.json()).error??"Failed","err");
+    }
+  });
+
+  const deleteUser = (id:string)=>askConfirm({
+    icon:"🗑️", title:"Delete this user?", body:"This action is permanent and cannot be undone. All their session data will be removed.",
+    confirmLabel:"Delete permanently", danger:true,
+    onConfirm: async()=>{
+      const r=await fetch(`/api/admin/users/${id}`,{method:"DELETE"});
+      const d=await r.json().catch(()=>({}));
+      if(r.ok){showToast("User deleted.");fetchUsers();}
+      else showToast(d.error??"Failed","err");
+    }
+  });
 
   // ── Order edit state ──────────────────────────────────────────────────────
   const [oForm,  setOForm]  = useState({status:"" as OrderStatus|"",assignedTo:"",expectedReadyAt:"",specialNotes:"",discountCode:"",discountAmount:"",note:""});
@@ -292,11 +318,22 @@ export default function AdminDashboard() {
       if(oForm.note)                                                  body.note=oForm.note;
       if(!Object.keys(body).length){showToast("No changes.","err");return;}
       const r=await fetch(`/api/admin/orders/${orderModal.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-      const d=await r.json();
+      const d=await r.json().catch(()=>({}));
       if(!r.ok){showToast(d.error??"Failed","err");return;}
       showToast("Order updated."); setOrderModal(null); fetchOrders();
     }finally{setOSaving(false);}
   };
+
+  const deleteOrder = (id:string)=>askConfirm({
+    icon:"🗑️", title:"Delete this order?", body:"This is permanent. Orders with completed payments cannot be deleted — cancel or refund them instead.",
+    confirmLabel:"Delete order", danger:true,
+    onConfirm: async()=>{
+      const r=await fetch(`/api/admin/orders/${id}`,{method:"DELETE"});
+      const d=await r.json().catch(()=>({}));
+      if(r.ok){showToast("Order deleted.");fetchOrders();if(ordersMonthly)fetchAllOrders2();}
+      else showToast(d.error??"Failed","err");
+    }
+  });
 
   // ── Payment correction state ──────────────────────────────────────────────
   const [pForm,  setPForm]  = useState({status:"" as PayStatus|"",amount:"",mpesaRef:"",failReason:"",adminNote:""});
@@ -315,7 +352,7 @@ export default function AdminDashboard() {
       if(pForm.adminNote)                              body.adminNote=pForm.adminNote;
       if(!Object.keys(body).filter(k=>k!=="adminNote").length&&!body.adminNote){showToast("No changes.","err");return;}
       const r=await fetch(`/api/admin/payments/${payModal.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-      const d=await r.json();
+      const d=await r.json().catch(()=>({}));
       if(!r.ok){showToast(d.error??"Failed","err");return;}
       showToast("Payment corrected."); setPayModal(null); fetchPayments(); if(tab==="overview")fetchStats();
     }finally{setPSaving(false);}
@@ -334,7 +371,7 @@ export default function AdminDashboard() {
       if(tForm.response.trim()) body.response=tForm.response;
       if(!Object.keys(body).length){showToast("Nothing to save.","err");return;}
       const r=await fetch(`/api/admin/tickets/${tickModal.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-      const d=await r.json();
+      const d=await r.json().catch(()=>({}));
       if(!r.ok){showToast(d.error??"Failed","err");return;}
       showToast("Ticket updated."); setTickModal(null); fetchTickets();
     }finally{setTSaving(false);}
@@ -361,97 +398,110 @@ export default function AdminDashboard() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-        html,body{height:100%;font-family:'DM Sans',sans-serif;background:#F4F1EC;color:#1C1410;}
-        ::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:#D1C9BC;border-radius:99px;}
+        html,body{height:100%;font-family:'DM Sans',sans-serif;background:#F2F0FF;color:#12101E;}
+        ::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(0,204,221,0.35);border-radius:99px;}
         @keyframes spin{to{transform:rotate(360deg);}}
         @keyframes slideup{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
         @keyframes fadein{from{opacity:0;}to{opacity:1;}}
         .shell{display:flex;min-height:100vh;}
-        .sidebar{width:230px;min-height:100vh;background:#1C1410;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+        .sidebar{width:230px;min-height:100vh;background:#0C0B1A;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;}
         .main{flex:1;min-width:0;display:flex;flex-direction:column;}
-        .sb-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,0.07);}
-        .sb-logo-word{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:#fff;letter-spacing:-0.02em;}
-        .sb-logo-word span{color:#C19A4A;}
-        .sb-pill{display:inline-block;margin-top:5px;background:rgba(220,38,38,0.18);border:1px solid rgba(220,38,38,0.35);color:#FCA5A5;font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:2px 8px;border-radius:99px;}
+        .sb-logo{padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;flex-direction:column;gap:8px;}
+        .sb-logo-img{height:36px;width:auto;object-fit:contain;display:block;}
+        .sb-pill{display:inline-block;background:rgba(220,0,110,0.2);border:1px solid rgba(220,0,110,0.4);color:#FF80C8;font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:2px 9px;border-radius:99px;width:fit-content;}
         .sb-nav{flex:1;padding:10px 0;}
-        .sb-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:0.83rem;font-weight:500;color:#9CA3AF;cursor:pointer;transition:background 0.15s,color 0.15s;border-left:3px solid transparent;}
-        .sb-item:hover{background:rgba(255,255,255,0.04);color:#E5E7EB;}
-        .sb-item.active{background:rgba(193,154,74,0.1);color:#E8C97A;border-left-color:#C19A4A;}
+        .sb-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:0.83rem;font-weight:500;color:#8B8FA8;cursor:pointer;transition:background 0.15s,color 0.15s;border-left:3px solid transparent;}
+        .sb-item:hover{background:rgba(255,255,255,0.04);color:#E0DDFF;}
+        .sb-item.active{background:rgba(255,214,0,0.1);color:#FFD600;border-left-color:#FFD600;}
         .sb-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
         .sb-footer{padding:14px 20px;border-top:1px solid rgba(255,255,255,0.07);}
         .sb-user{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-        .sb-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#DC2626,#7F1D1D);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:#fff;flex-shrink:0;}
-        .sb-uname{font-size:0.75rem;font-weight:600;color:#E8C97A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        .sb-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#DC006E,#7A003D);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:#fff;flex-shrink:0;}
+        .sb-uname{font-size:0.75rem;font-weight:600;color:#FFD600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
         .sb-logout{background:none;border:none;cursor:pointer;font-size:0.72rem;color:#6B7280;padding:0;transition:color 0.15s;font-family:'DM Sans',sans-serif;width:100%;text-align:left;}
-        .sb-logout:hover{color:#EF4444;}
-        .topbar{background:#fff;border-bottom:1px solid #EDE8E0;padding:0 28px;height:56px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:30;}
-        .topbar-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:#1C1410;flex:1;}
+        .sb-logout:hover{color:#FF80C8;}
+        .topbar{background:#fff;border-bottom:1px solid #E4DEFF;padding:0 28px;height:56px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:30;box-shadow:0 1px 4px rgba(12,11,26,0.06);}
+        .topbar-title{font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;color:#12101E;flex:1;}
         .content{padding:22px 28px;flex:1;}
         .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
-        .sc{background:#fff;border:1px solid #EDE8E0;border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;}
+        .sc{background:#fff;border:1px solid #E4DEFF;border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;}
         .sc-accent{position:absolute;top:0;left:0;right:0;height:3px;border-radius:12px 12px 0 0;}
         .sc-icon{font-size:1.3rem;margin-bottom:8px;}
         .sc-label{font-size:0.68rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9CA3AF;margin-bottom:3px;}
-        .sc-val{font-family:'Syne',sans-serif;font-size:1.55rem;font-weight:800;color:#1C1410;line-height:1;}
+        .sc-val{font-family:'DM Sans',sans-serif;font-size:1.55rem;font-weight:800;color:#12101E;line-height:1;}
         .sc-sub{font-size:0.7rem;color:#9CA3AF;margin-top:3px;}
-        .tbl-wrap{background:#fff;border:1px solid #EDE8E0;border-radius:12px;overflow:hidden;}
-        .tbl-toolbar{padding:12px 16px;border-bottom:1px solid #EDE8E0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+        .tbl-wrap{background:#fff;border:1px solid #E4DEFF;border-radius:12px;overflow:hidden;}
+        .tbl-toolbar{padding:12px 16px;border-bottom:1px solid #E4DEFF;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
         .srch{position:relative;flex:1;min-width:180px;}
         .srch-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9CA3AF;font-size:0.85rem;pointer-events:none;}
-        .srch-inp{width:100%;background:#F9F7F4;border:1.5px solid #EDE8E0;border-radius:8px;padding:7px 10px 7px 30px;font-family:'DM Sans',sans-serif;font-size:0.84rem;color:#1C1410;outline:none;}
-        .srch-inp:focus{border-color:#C19A4A;}
-        .flt-sel{background:#F9F7F4;border:1.5px solid #EDE8E0;border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:0.82rem;color:#1C1410;cursor:pointer;outline:none;}
-        .add-btn{background:#1C1410;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:background 0.15s;display:flex;align-items:center;gap:5px;}
-        .add-btn:hover{background:#3D2B1A;}
+        .srch-inp{width:100%;background:#F4F2FF;border:1.5px solid #E4DEFF;border-radius:8px;padding:7px 10px 7px 30px;font-family:'DM Sans',sans-serif;font-size:0.84rem;color:#12101E;outline:none;}
+        .srch-inp:focus{border-color:#FFD600;}
+        .flt-sel{background:#F4F2FF;border:1.5px solid #E4DEFF;border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:0.82rem;color:#12101E;cursor:pointer;outline:none;}
+        .add-btn{background:#0C0B1A;color:#FFD600;border:none;border-radius:8px;padding:7px 14px;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:background 0.15s;display:flex;align-items:center;gap:5px;}
+        .add-btn:hover{background:#1E1A3A;}
         .tbl-scroll{overflow-x:auto;}
         table{width:100%;border-collapse:collapse;min-width:700px;}
-        thead th{padding:9px 14px;font-size:0.67rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9CA3AF;background:#FAFAF9;border-bottom:1px solid #EDE8E0;text-align:left;white-space:nowrap;}
-        tbody td{padding:11px 14px;font-size:0.83rem;color:#1C1410;border-bottom:1px solid #F5F3EF;vertical-align:middle;}
+        thead th{padding:9px 14px;font-size:0.67rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9CA3AF;background:#F8F7FF;border-bottom:1px solid #E4DEFF;text-align:left;white-space:nowrap;}
+        tbody td{padding:11px 14px;font-size:0.83rem;color:#12101E;border-bottom:1px solid #EBE8FF;vertical-align:middle;}
         tbody tr:last-child td{border-bottom:none;}
-        tbody tr:hover td{background:#FDFAF6;}
+        tbody tr:hover td{background:#F8F7FF;}
         .mono{font-family:monospace;font-size:0.76rem;color:#6B7280;}
-        .tbl-foot{padding:9px 16px;background:#FAFAF9;border-top:1px solid #EDE8E0;display:flex;justify-content:space-between;align-items:center;font-size:0.73rem;color:#9CA3AF;flex-wrap:wrap;gap:8px;}
-        .pg-btn{background:#F9F7F4;border:1.5px solid #EDE8E0;border-radius:6px;padding:3px 10px;font-family:'DM Sans',sans-serif;font-size:0.75rem;font-weight:600;cursor:pointer;color:#374151;transition:all 0.15s;}
-        .pg-btn:hover:not(:disabled){border-color:#C19A4A;color:#92620A;}
+        .tbl-foot{padding:9px 16px;background:#F8F7FF;border-top:1px solid #E4DEFF;display:flex;justify-content:space-between;align-items:center;font-size:0.73rem;color:#9CA3AF;flex-wrap:wrap;gap:8px;}
+        .pg-btn{background:#F4F2FF;border:1.5px solid #E4DEFF;border-radius:6px;padding:3px 10px;font-family:'DM Sans',sans-serif;font-size:0.75rem;font-weight:600;cursor:pointer;color:#374151;transition:all 0.15s;}
+        .pg-btn:hover:not(:disabled){border-color:#FFD600;color:#8A7200;}
         .pg-btn:disabled{opacity:0.35;cursor:default;}
         .act-btn{padding:3px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;white-space:nowrap;}
-        .btn-edit{background:#EFF6FF;color:#1D4ED8;}
-        .btn-edit:hover{background:#DBEAFE;}
-        .btn-deact{background:#FEF2F2;color:#DC2626;}
-        .btn-deact:hover{background:#FEE2E2;}
+        .btn-edit{background:#DFFBFF;color:#006680;}
+        .btn-edit:hover{background:#B0F0FA;}
+        .btn-deact{background:#FFF0F8;color:#CC005A;}
+        .btn-deact:hover{background:#FFD6ED;}
+        .btn-actv{background:#FFFBE0;color:#7A6200;}
+        .btn-actv:hover{background:#FFF580;}
+        .btn-del{background:#5C0030;color:#FFD6ED;}
+        .btn-del:hover{background:#8A0048;}
         .section-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
-        .section-title{font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;color:#1C1410;}
+        .section-title{font-family:'DM Sans',sans-serif;font-size:0.95rem;font-weight:700;color:#12101E;}
         .two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
-        .card{background:#fff;border:1px solid #EDE8E0;border-radius:12px;padding:16px 18px;}
-        .card-title{font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9CA3AF;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F5F3EF;}
-        .audit-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #F9F7F4;}
+        .card{background:#fff;border:1px solid #E4DEFF;border-radius:12px;padding:16px 18px;}
+        .card-title{font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9CA3AF;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #EBE8FF;}
+        .audit-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #F4F2FF;}
         .audit-item:last-child{border-bottom:none;}
-        .audit-dot{width:8px;height:8px;border-radius:50%;background:#C19A4A;flex-shrink:0;margin-top:4px;}
+        .audit-dot{width:8px;height:8px;border-radius:50%;background:#FFD600;flex-shrink:0;margin-top:4px;}
         .audit-body{flex:1;min-width:0;}
-        .audit-action{font-size:0.78rem;font-weight:700;color:#1C1410;}
+        .audit-action{font-size:0.78rem;font-weight:700;color:#12101E;}
         .audit-meta{font-size:0.7rem;color:#9CA3AF;margin-top:1px;}
-        .save-btn{flex:1;background:#1C1410;color:#fff;border:none;border-radius:8px;padding:10px;font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer;transition:background 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;}
-        .save-btn:hover:not(:disabled){background:#3D2B1A;}
+        .save-btn{flex:1;background:#0C0B1A;color:#FFD600;border:none;border-radius:8px;padding:10px;font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer;transition:background 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;}
+        .save-btn:hover:not(:disabled){background:#1E1A3A;}
         .save-btn:disabled{opacity:0.5;cursor:default;}
-        .cancel-btn{background:#F9F7F4;border:1.5px solid #EDE8E0;color:#374151;border-radius:8px;padding:10px 16px;font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;}
-        .spinner-sm{width:15px;height:15px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;}
+        .cancel-btn{background:#F4F2FF;border:1.5px solid #E4DEFF;color:#374151;border-radius:8px;padding:10px 16px;font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;}
+        .spinner-sm{width:15px;height:15px;border:2px solid rgba(255,255,255,0.25);border-top-color:#FFD600;border-radius:50%;animation:spin 0.7s linear infinite;}
         .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;}
-        .info-row{padding:5px 0;border-bottom:1px solid #F9F7F4;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+        .info-row{padding:5px 0;border-bottom:1px solid #F4F2FF;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
         .info-label{font-size:0.7rem;color:#9CA3AF;white-space:nowrap;}
-        .info-val{font-size:0.82rem;font-weight:600;color:#1C1410;text-align:right;word-break:break-word;}
+        .info-val{font-size:0.82rem;font-weight:600;color:#12101E;text-align:right;word-break:break-word;}
         .tl{display:flex;flex-direction:column;}
         .tl-item{display:flex;gap:10px;padding-bottom:12px;}
         .tl-dot-w{display:flex;flex-direction:column;align-items:center;width:16px;flex-shrink:0;}
-        .tl-dot{width:8px;height:8px;border-radius:50%;background:#C19A4A;margin-top:3px;}
-        .tl-line{flex:1;width:1.5px;background:#F0E8DC;margin-top:3px;}
+        .tl-dot{width:8px;height:8px;border-radius:50%;background:#FFD600;margin-top:3px;}
+        .tl-line{flex:1;width:1.5px;background:#E4DEFF;margin-top:3px;}
         .tl-body{flex:1;}
-        .tl-status{font-size:0.76rem;font-weight:700;color:#1C1410;}
+        .tl-status{font-size:0.76rem;font-weight:700;color:#12101E;}
         .tl-meta{font-size:0.68rem;color:#9CA3AF;}
-        .tl-note{font-size:0.72rem;color:#5C4A38;background:#FEF9EE;border-radius:4px;padding:3px 7px;margin-top:4px;border-left:2px solid #C19A4A;}
-        .readonly-note{font-size:0.7rem;color:#9CA3AF;font-style:italic;padding:6px 10px;background:#F9F7F4;border-radius:6px;margin-top:8px;}
-        .psec-title{font-size:0.67rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#9CA3AF;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #F5F3EF;margin-top:16px;}
+        .tl-note{font-size:0.72rem;color:#3D3070;background:#FFFBE0;border-radius:4px;padding:3px 7px;margin-top:4px;border-left:2px solid #FFD600;}
+        .readonly-note{font-size:0.7rem;color:#9CA3AF;font-style:italic;padding:6px 10px;background:#F4F2FF;border-radius:6px;margin-top:8px;}
+        .psec-title{font-size:0.67rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#9CA3AF;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #EBE8FF;margin-top:16px;}
+        .cdlg-overlay{position:fixed;inset:0;background:rgba(12,11,26,0.6);z-index:900;display:flex;align-items:center;justify-content:center;animation:fadein 0.15s ease;}
+        .cdlg{background:#fff;border-radius:14px;padding:28px 26px 22px;width:min(420px,92vw);box-shadow:0 20px 60px rgba(0,0,0,0.22);animation:slideup 0.2s ease;}
+        .cdlg-icon{font-size:2rem;margin-bottom:12px;text-align:center;}
+        .cdlg-title{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;color:#12101E;margin-bottom:6px;text-align:center;}
+        .cdlg-body{font-size:0.85rem;color:#6B7280;text-align:center;line-height:1.55;margin-bottom:22px;}
+        .cdlg-btns{display:flex;gap:10px;}
+        .cdlg-cancel{flex:1;background:#F4F2FF;border:1.5px solid #E4DEFF;color:#374151;border-radius:8px;padding:10px;font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;}
+        .cdlg-confirm{flex:1;border:none;border-radius:8px;padding:10px;font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer;}
+        .cdlg-confirm.danger{background:#5C0030;color:#FFD6ED;}
+        .cdlg-confirm.normal{background:#0C0B1A;color:#FFD600;}
         @media(max-width:1024px){.stats-grid{grid-template-columns:1fr 1fr;}.two-col{grid-template-columns:1fr;}}
-        @media(max-width:768px){.sidebar{width:58px;}.sb-logo-word,.sb-pill,.sb-uname,.sb-logout{display:none;}.sb-item span:not(.sb-icon){display:none;}.sb-item{padding:10px;justify-content:center;}.content{padding:14px;}.topbar{padding:0 14px;}.stats-grid{grid-template-columns:1fr 1fr;}}
+        @media(max-width:768px){.sidebar{width:58px;}.sb-pill,.sb-uname,.sb-logout{display:none;}.sb-item span:not(.sb-icon){display:none;}.sb-item{padding:10px;justify-content:center;}.content{padding:14px;}.topbar{padding:0 14px;}.stats-grid{grid-template-columns:1fr 1fr;}}
         @media(max-width:480px){.stats-grid{grid-template-columns:1fr;}}
       `}</style>
 
@@ -459,7 +509,7 @@ export default function AdminDashboard() {
         {/* ── Sidebar ── */}
         <aside className="sidebar">
           <div className="sb-logo">
-            <div className="sb-logo-word">FRANK<span>STAT</span></div>
+            <img src="/logo.png" alt="FrankStat" className="sb-logo-img"/>
             <span className="sb-pill">Admin</span>
           </div>
           <nav className="sb-nav">
@@ -469,6 +519,11 @@ export default function AdminDashboard() {
                 <span>{n.label}</span>
               </div>
             ))}
+            <div style={{margin:"8px 20px",borderTop:"1px solid rgba(255,255,255,0.07)"}}/>
+            <a href="/admin/banner" className="sb-item" style={{textDecoration:"none",color:"#00CCDD",gap:10}}>
+              <span className="sb-icon">📢</span>
+              <span>Offer Banner</span>
+            </a>
           </nav>
           <div className="sb-footer">
             <div className="sb-user">
@@ -495,10 +550,10 @@ export default function AdminDashboard() {
               <>
                 <div className="stats-grid">
                   {[
-                    {icon:"👥",label:"Total Users",    val:stats?.users.total??0,       sub:"registered accounts",  accent:"#6366F1"},
-                    {icon:"🗂️",label:"Total Orders",   val:stats?.orders.total??0,      sub:`${stats?.orders.active??0} active`,accent:"#F59E0B"},
-                    {icon:"💰",label:"Revenue Collected",val:stats?fmt(stats.revenue.totalCollected):"—",sub:`${stats?.revenue.totalTransactions??0} transactions`,accent:"#10B981",big:true},
-                    {icon:"⏳",label:"Balance Pending",  val:stats?fmt(stats.revenue.pendingBalance):"—",sub:"on active orders",accent:"#EF4444",big:true},
+                    {icon:"👥",label:"Total Users",    val:stats?.users.total??0,       sub:"registered accounts",  accent:"#FFD600"},
+                    {icon:"🗂️",label:"Total Orders",   val:stats?.orders.total??0,      sub:`${stats?.orders.active??0} active`,accent:"#00CCDD"},
+                    {icon:"💰",label:"Revenue Collected",val:stats?fmt(stats.revenue.totalCollected):"—",sub:`${stats?.revenue.totalTransactions??0} transactions`,accent:"#DC006E",big:true},
+                    {icon:"⏳",label:"Balance Pending",  val:stats?fmt(stats.revenue.pendingBalance):"—",sub:"on active orders",accent:"#FFD600",big:true},
                   ].map(s=>(
                     <div key={s.label} className="sc">
                       <div className="sc-accent" style={{background:s.accent}}/>
@@ -508,6 +563,18 @@ export default function AdminDashboard() {
                       <div className="sc-sub">{s.sub}</div>
                     </div>
                   ))}
+                </div>
+
+                {/* Quick actions */}
+                <div className="card" style={{marginBottom:18}}>
+                  <div className="card-title">Quick Actions</div>
+                  <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                    <a href="/admin/banner" style={{display:"inline-flex",alignItems:"center",gap:7,background:"rgba(0,204,221,0.08)",border:"1px solid rgba(0,204,221,0.3)",borderRadius:9,padding:"9px 16px",textDecoration:"none",color:"#00CCDD",fontSize:"0.82rem",fontWeight:600,transition:"background 0.15s"}}
+                      onMouseEnter={e=>(e.currentTarget.style.background="rgba(0,204,221,0.18)")}
+                      onMouseLeave={e=>(e.currentTarget.style.background="rgba(0,204,221,0.08)")}>
+                      <span>📢</span> Manage Offer Banner
+                    </a>
+                  </div>
                 </div>
 
                 <div className="two-col">
@@ -532,7 +599,7 @@ export default function AdminDashboard() {
                       {(stats?.recentAudit??[]).map((a:any,i:number,arr:any[])=>(
                         <div key={a.id} className="tl-item">
                           <div className="tl-dot-w">
-                            <div className="tl-dot" style={{background:i===0?"#C19A4A":"#D1C9BC"}}/>
+                            <div className="tl-dot" style={{background:i===0?"#FFD600":i===1?"#00CCDD":i===2?"#DC006E":"#8B8FA8"}}/>
                             {i<arr.length-1&&<div className="tl-line"/>}
                           </div>
                           <div className="tl-body">
@@ -553,7 +620,7 @@ export default function AdminDashboard() {
                       const m=ORDER_STATUS_META[s];
                       return m?<div key={s} style={{background:m.bg,border:`1px solid ${m.color}25`,borderRadius:8,padding:"8px 14px",display:"flex",flexDirection:"column",gap:2}}>
                         <span style={{fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:m.color}}>{m.label}</span>
-                        <span style={{fontFamily:"'Syne',sans-serif",fontSize:"1.4rem",fontWeight:800,color:m.color}}>{c as number}</span>
+                        <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:"1.4rem",fontWeight:800,color:m.color}}>{c as number}</span>
                       </div>:null;
                     })}
                   </div>
@@ -589,7 +656,11 @@ export default function AdminDashboard() {
                           <td>
                             <div style={{display:"flex",gap:5}}>
                               <button className="act-btn btn-edit" onClick={()=>openEditUser(u)}>Edit</button>
-                              {u.isActive&&<button className="act-btn btn-deact" onClick={()=>deactivateUser(u.id)}>Deactivate</button>}
+                              {u.isActive
+                                ? <button className="act-btn btn-deact" onClick={()=>deactivateUser(u.id)}>Deactivate</button>
+                                : <button className="act-btn btn-actv" onClick={()=>activateUser(u.id)}>Activate</button>
+                              }
+                              <button className="act-btn btn-del" onClick={()=>deleteUser(u.id)}>Delete</button>
                             </div>
                           </td>
                         </tr>
@@ -634,7 +705,7 @@ export default function AdminDashboard() {
                           <div key={month} style={{borderBottom:"1px solid #EDE8E0"}}>
                             <div style={{background:"#FAFAF9",borderBottom:"1px solid #EDE8E0",padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
                               <div>
-                                <span style={{fontFamily:"'Syne',sans-serif",fontSize:"0.88rem",fontWeight:700,color:"#1C1410"}}>📅 {month}</span>
+                                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",fontWeight:700,color:"#1C1410"}}>📅 {month}</span>
                                 <span style={{marginLeft:10,fontSize:"0.73rem",color:"#9CA3AF"}}>{items.length} order{items.length!==1?"s":""}</span>
                               </div>
                               <div style={{display:"flex",gap:18,fontSize:"0.75rem",flexWrap:"wrap"}}>
@@ -656,7 +727,7 @@ export default function AdminDashboard() {
                                       <td style={{fontWeight:600,color:o.balanceDue>0?"#D97706":"#14532D"}}>{fmt(o.balanceDue)}</td>
                                       <td><Badge label={ORDER_STATUS_META[o.status]?.label??o.status} color={ORDER_STATUS_META[o.status]?.color??""} bg={ORDER_STATUS_META[o.status]?.bg??""}/></td>
                                       <td style={{fontSize:"0.75rem",color:"#9CA3AF",whiteSpace:"nowrap"}}>{fmtD(o.createdAt)}</td>
-                                      <td><button className="act-btn btn-edit" onClick={()=>openOrder(o)}>Edit</button></td>
+                                      <td><div style={{display:"flex",gap:5}}><button className="act-btn btn-edit" onClick={()=>openOrder(o)}>Edit</button><button className="act-btn btn-del" onClick={()=>deleteOrder(o.id)}>Delete</button></div></td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -685,7 +756,7 @@ export default function AdminDashboard() {
                               <td style={{fontWeight:600,color:o.balanceDue>0?"#D97706":"#14532D"}}>{fmt(o.balanceDue)}</td>
                               <td><Badge label={ORDER_STATUS_META[o.status]?.label??o.status} color={ORDER_STATUS_META[o.status]?.color??""} bg={ORDER_STATUS_META[o.status]?.bg??""}/></td>
                               <td style={{fontSize:"0.75rem",color:"#9CA3AF",whiteSpace:"nowrap"}}>{fmtD(o.createdAt)}</td>
-                              <td><button className="act-btn btn-edit" onClick={()=>openOrder(o)}>Edit</button></td>
+                              <td><div style={{display:"flex",gap:5}}><button className="act-btn btn-edit" onClick={()=>openOrder(o)}>Edit</button><button className="act-btn btn-del" onClick={()=>deleteOrder(o.id)}>Delete</button></div></td>
                             </tr>
                           ))}
                         </tbody>
@@ -729,7 +800,7 @@ export default function AdminDashboard() {
                           <div key={month} style={{borderBottom:"1px solid #EDE8E0"}}>
                             <div style={{background:"#FAFAF9",borderBottom:"1px solid #EDE8E0",padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
                               <div>
-                                <span style={{fontFamily:"'Syne',sans-serif",fontSize:"0.88rem",fontWeight:700,color:"#1C1410"}}>📅 {month}</span>
+                                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",fontWeight:700,color:"#1C1410"}}>📅 {month}</span>
                                 <span style={{marginLeft:10,fontSize:"0.73rem",color:"#9CA3AF"}}>{items.length} transaction{items.length!==1?"s":""}</span>
                               </div>
                               <span style={{fontSize:"0.75rem"}}>Collected: <strong style={{color:"#14532D"}}>{fmt(collected)}</strong></span>
@@ -1001,6 +1072,22 @@ export default function AdminDashboard() {
       )}
 
       {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+
+      {confirmDlg&&(
+        <div className="cdlg-overlay" onClick={()=>setConfirmDlg(null)}>
+          <div className="cdlg" onClick={e=>e.stopPropagation()}>
+            <div className="cdlg-icon">{confirmDlg.icon}</div>
+            <div className="cdlg-title">{confirmDlg.title}</div>
+            <div className="cdlg-body">{confirmDlg.body}</div>
+            <div className="cdlg-btns">
+              <button className="cdlg-cancel" onClick={()=>setConfirmDlg(null)}>Cancel</button>
+              <button className={`cdlg-confirm ${confirmDlg.danger?"danger":"normal"}`} onClick={()=>{const fn=confirmDlg.onConfirm;setConfirmDlg(null);fn();}}>
+                {confirmDlg.confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -18,6 +18,7 @@ import {
   RESET_TOKEN_TTL_MS,
 } from "@/lib/auth";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { rateLimit, clientIp } from "@/lib/rateLimit";
 
 const schema = z.object({
   email: z.string().email().toLowerCase().trim(),
@@ -30,6 +31,10 @@ const OK_RESPONSE = NextResponse.json({
 });
 
 export async function POST(req: Request) {
+  // Rate limit: 3 requests per hour per IP (email flooding protection)
+  const rl = rateLimit(`forgot-pw:${clientIp(req)}`, { limit: 3, windowMs: 60 * 60_000 });
+  if (rl.limited) return OK_RESPONSE; // silently swallow — don't confirm the limit exists
+
   try {
     const json = await req.json().catch(() => null);
     if (!json) return OK_RESPONSE;

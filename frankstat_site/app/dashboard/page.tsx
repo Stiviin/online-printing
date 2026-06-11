@@ -6,20 +6,30 @@ import Link from "next/link";
 // Prisma OrderStatus enum → display values used by the UI
 type ProjectStatus =
   | "Pending"
-  | "In Progress"
-  | "Awaiting Approval"
-  | "Printing"
+  | "In Production"
+  | "Quality Check"
+  | "Ready"
+  | "Delivering"
   | "Completed"
-  | "Cancelled";
+  | "Payment Failed"
+  | "Payment Error"
+  | "Cancelled"
+  | "Refunded";
 
 const PRISMA_TO_UI: Record<string, ProjectStatus> = {
   PENDING_PAYMENT: "Pending",
-  PAID_DEPOSIT:    "In Progress",
-  PROCESSING:      "Printing",
-  READY:           "Awaiting Approval",
+  IN_PRODUCTION:   "In Production",
+  QUALITY_CHECK:   "Quality Check",
+  READY:           "Ready",
+  DELIVERING:      "Delivering",
   COMPLETED:       "Completed",
+  PAYMENT_FAILED:  "Payment Failed",
+  PAYMENT_ERROR:   "Payment Error",
   CANCELLED:       "Cancelled",
+  REFUNDED:        "Refunded",
 };
+
+const BALANCE_ALLOWED = ["IN_PRODUCTION","QUALITY_CHECK","READY","DELIVERING"];
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 type Tab = "overview" | "orders" | "track" | "payments" | "profile" | "support";
@@ -36,6 +46,7 @@ interface Order {
   depositAmount: number;
   artworkUrl: string;
   mpesaPhone: string;
+  balanceDue: number;
   status: string;        // raw Prisma enum string
   mpesaReceipt?: string | null;
   createdAt: string;
@@ -79,19 +90,24 @@ const STATUS_META: Record<
   ProjectStatus,
   { color: string; bg: string; icon: string; step: number; label: string }
 > = {
-  "Pending":           { color: "#92620A", bg: "#FEF9E7", icon: "🕐", step: 1, label: "Order Received"    },
-  "Awaiting Approval": { color: "#7D3C98", bg: "#F5EEF8", icon: "🔍", step: 2, label: "Awaiting Approval" },
-  "In Progress":       { color: "#1A5276", bg: "#EAF4FC", icon: "⚙️", step: 3, label: "In Progress"       },
-  "Printing":          { color: "#1A6B3A", bg: "#EAFAF1", icon: "🖨️", step: 4, label: "Printing"          },
-  "Completed":         { color: "#155724", bg: "#D4EDDA", icon: "✅", step: 5, label: "Completed"          },
-  "Cancelled":         { color: "#922B21", bg: "#FDEDEC", icon: "❌", step: 0, label: "Cancelled"          },
+  "Pending":       { color: "#8A7200", bg: "#FFFBE0", icon: "⏳", step: 1, label: "Order Received"  },
+  "In Production": { color: "#006680", bg: "#DFFBFF", icon: "🖨️", step: 2, label: "In Production"   },
+  "Quality Check": { color: "#3D3070", bg: "#F4F2FF", icon: "🔍", step: 3, label: "Quality Check"   },
+  "Ready":         { color: "#006680", bg: "#DFFBFF", icon: "📦", step: 4, label: "Ready"            },
+  "Delivering":    { color: "#8A7200", bg: "#FFFBE0", icon: "🚚", step: 5, label: "Out for Delivery" },
+  "Completed":     { color: "#155724", bg: "#F0FDF4", icon: "✅", step: 6, label: "Completed"        },
+  "Payment Failed":{ color: "#CC005A", bg: "#FFF0F8", icon: "❌", step: 0, label: "Payment Failed"   },
+  "Payment Error": { color: "#CC005A", bg: "#FFF0F8", icon: "⚠️", step: 0, label: "Payment Error"   },
+  "Cancelled":     { color: "#374151", bg: "#F9FAFB", icon: "🚫", step: 0, label: "Cancelled"        },
+  "Refunded":      { color: "#374151", bg: "#F3F4F6", icon: "↩️", step: 0, label: "Refunded"         },
 };
 
 const PROGRESS_STEPS = [
   "Order Received",
-  "Awaiting Approval",
-  "In Progress",
-  "Printing",
+  "In Production",
+  "Quality Check",
+  "Ready",
+  "Out for Delivery",
   "Completed",
 ];
 
@@ -187,7 +203,7 @@ function Modal({
           background: "#fff",
           borderRadius: "16px",
           width: "100%",
-          maxWidth: wide ? "700px" : "520px",
+          maxWidth: wide ? "700px" : "800px",
           maxHeight: "92vh",
           overflowY: "auto",
           boxShadow: "0 24px 60px rgba(0,0,0,0.22)",
@@ -247,7 +263,7 @@ function Modal({
 function ProgressTracker({ order }: { order: Order }) {
   const meta = STATUS_META[order.uiStatus];
   const currentStep = meta.step;
-  const isCancelled = order.uiStatus === "Cancelled";
+  const isTerminalError = ["Cancelled","Payment Failed","Payment Error","Refunded"].includes(order.uiStatus);
 
   return (
     <div
@@ -292,22 +308,25 @@ function ProgressTracker({ order }: { order: Order }) {
         />
       </div>
 
-      {isCancelled ? (
+      {isTerminalError ? (
         <div
           style={{
-            background: "#FDEDEC",
-            border: "1.5px solid #FADBD8",
+            background: order.uiStatus === "Refunded" ? "#F4F2FF" : "#FFF0F8",
+            border: `1.5px solid ${order.uiStatus === "Refunded" ? "#E4DEFF" : "#FFD6ED"}`,
             borderRadius: "10px",
             padding: "1rem 1.2rem",
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: "1.5rem", marginBottom: "0.4rem" }}>❌</div>
-          <div style={{ fontWeight: 700, color: "#922B21", fontSize: "0.9rem" }}>
-            This order was cancelled.
+          <div style={{ fontSize: "1.5rem", marginBottom: "0.4rem" }}>{meta.icon}</div>
+          <div style={{ fontWeight: 700, color: meta.color, fontSize: "0.9rem" }}>
+            {order.uiStatus === "Cancelled"     && "This order was cancelled."}
+            {order.uiStatus === "Payment Failed"&& "Payment was not completed."}
+            {order.uiStatus === "Payment Error" && "A payment error occurred."}
+            {order.uiStatus === "Refunded"      && "A refund has been processed."}
           </div>
-          <div style={{ fontSize: "0.82rem", color: "#A57070", marginTop: "0.25rem" }}>
-            Any deposits paid will be processed according to our refund policy.
+          <div style={{ fontSize: "0.82rem", color: "#9CA3AF", marginTop: "0.25rem" }}>
+            Contact support if you need assistance.
           </div>
         </div>
       ) : (
@@ -563,6 +582,11 @@ export default function UserDashboard() {
   const [editPhone, setEditPhone] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
 
+  // ── Pay-balance state ─────────────────────────────────────────────────────
+  const [payBalanceOrder,  setPayBalanceOrder]  = useState<Order | null>(null);
+  const [payBalancePhone,  setPayBalancePhone]  = useState("");
+  const [payBalanceSaving, setPayBalanceSaving] = useState(false);
+
   // ── Password change state ─────────────────────────────────────────────────
   const [pwOpen,   setPwOpen]   = useState(false);
   const [currPw,   setCurrPw]   = useState("");
@@ -625,6 +649,29 @@ export default function UserDashboard() {
     setTimeout(() => setToast(null), 3500);
   };
 
+  // ── Pay balance ───────────────────────────────────────────────────────────
+  const handlePayBalance = async () => {
+    if (!payBalanceOrder) return;
+    setPayBalanceSaving(true);
+    try {
+      const phone = payBalancePhone.trim();
+      const r = await fetch(`/api/orders/${payBalanceOrder.id}/pay-balance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(phone ? { mpesa: phone } : {}),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { showToast(d.error ?? "Payment could not be initiated.", "error"); return; }
+      showToast(d.customerMessage ?? "M-Pesa prompt sent! Check your phone.", "success");
+      setPayBalanceOrder(null);
+      setPayBalancePhone("");
+    } catch {
+      showToast("Network error. Please try again.", "error");
+    } finally {
+      setPayBalanceSaving(false);
+    }
+  };
+
   // ── Save profile ──────────────────────────────────────────────────────────
   const handleSaveProfile = async () => {
     if (!editName.trim()) { showToast("Full name is required.", "error"); return; }
@@ -672,7 +719,7 @@ export default function UserDashboard() {
     const html = `<!DOCTYPE html><html><head><title>Frankstat Receipt</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;}
-  body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1C1410;padding:40px 32px;}
+  body{font-family:'Segoe UI',Arial,sans-serif,monospace,roboto;background:#fff;color:#1C1410;padding:40px 32px;}
   .logo{font-size:1.5rem;font-weight:900;letter-spacing:-0.02em;margin-bottom:4px;}
   .logo span{color:#C19A4A;}
   .sub{font-size:0.78rem;color:#888;margin-bottom:32px;}
@@ -685,7 +732,7 @@ export default function UserDashboard() {
   .footer{margin-top:32px;padding-top:16px;border-top:1px solid #F0E8DC;font-size:0.72rem;color:#aaa;text-align:center;line-height:1.8;}
   @media print{body{padding:24px;}}
 </style></head><body>
-  <div class="logo">FRANK<span>STAT</span></div>
+  <div class="logo">FRAN<span>STAT</span></div>
   <div class="sub">Frankstat Printing Solutions · Nairobi, Kenya</div>
   <h2>Official Payment Receipt</h2>
   <div class="amount">KES ${p.amount.toLocaleString()}</div>
@@ -709,7 +756,7 @@ export default function UserDashboard() {
 
   // ── Derived data ───────────────────────────────────────────────────────────
   const activeOrders = orders.filter(
-    (o) => !["Completed", "Cancelled"].includes(o.uiStatus)
+    (o) => !["Completed", "Cancelled", "Refunded", "Payment Failed", "Payment Error"].includes(o.uiStatus)
   );
   const completedOrders = orders.filter((o) => o.uiStatus === "Completed");
 
@@ -797,7 +844,8 @@ export default function UserDashboard() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://googleapis.com');
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -805,7 +853,7 @@ export default function UserDashboard() {
         .dash-shell {
           display: flex;
           min-height: 100vh;
-          background: #F9F5EF;
+          background: #F2F0FF;
           font-family: 'DM Sans', sans-serif;
         }
 
@@ -813,7 +861,7 @@ export default function UserDashboard() {
         .sidebar {
           width: 224px;
           min-height: 100vh;
-          background: #1C1410;
+          background: #0C0B1A;
           display: flex;
           flex-direction: column;
           position: fixed;
@@ -828,21 +876,19 @@ export default function UserDashboard() {
           display: flex;
           align-items: center;
           gap: 0.6rem;
-          padding: 1.4rem 1.2rem;
-          font-family: 'Playfair Display', serif;
-          font-size: 1.25rem;
-          font-weight: 900;
-          color: #fff;
+          padding: 1.2rem 1.2rem 1rem;
           text-decoration: none;
           border-bottom: 1px solid rgba(255,255,255,0.07);
           white-space: nowrap;
           flex-shrink: 0;
         }
-        .gold { color: #C19A4A; }
-        .sb-txt { letter-spacing: 0.12em; font-size: 0.85rem; }
+        .sb-logo-img { height: 32px; width: auto; object-fit: contain; flex-shrink: 0; }
+        .gold { color: #FFD600; }
+        .sb-txt { letter-spacing: 0.12em; font-size: 0.85rem; color: #fff; font-family: 'DM Sans', sans-serif; font-weight: 700; }
         .pill {
-          background: #C19A4A;
-          color: #1C1410;
+          background: rgba(220,0,110,0.18);
+          color: #FF80C8;
+          border: 1px solid rgba(220,0,110,0.35);
           font-size: 0.58rem;
           font-weight: 800;
           letter-spacing: 0.12em;
@@ -864,16 +910,17 @@ export default function UserDashboard() {
           align-items: center;
           gap: 0.9rem;
           padding: 0.75rem 1.2rem;
-          color: rgba(255,255,255,0.6);
+          color: rgba(255,255,255,0.5);
           cursor: pointer;
           border-radius: 0;
           transition: background 0.15s, color 0.15s;
           white-space: nowrap;
           font-size: 0.88rem;
           font-weight: 500;
+          border-left: 3px solid transparent;
         }
-        .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
-        .nav-item.active { background: rgba(193,154,74,0.15); color: #C19A4A; font-weight: 700; }
+        .nav-item:hover { background: rgba(255,255,255,0.05); color: #E0DDFF; }
+        .nav-item.active { background: rgba(255,214,0,0.1); color: #FFD600; font-weight: 700; border-left-color: #FFD600; }
         .nav-icon { font-size: 1.05rem; flex-shrink: 0; width: 22px; text-align: center; }
         .nav-label { overflow: hidden; text-overflow: ellipsis; }
 
@@ -890,7 +937,7 @@ export default function UserDashboard() {
         .u-avatar {
           width: 36px; height: 36px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #C19A4A, #8B6914);
+          background: linear-gradient(135deg, #FFD600, #DC006E);
           color: #fff;
           font-size: 0.9rem;
           font-weight: 800;
@@ -900,7 +947,7 @@ export default function UserDashboard() {
           user-select: none;
         }
         .u-name { font-size: 0.82rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .u-tag { font-size: 0.7rem; color: #C19A4A; font-weight: 600; }
+        .u-tag { font-size: 0.7rem; color: #FFD600; font-weight: 600; }
 
         /* ── Main ── */
         .main {
@@ -917,40 +964,40 @@ export default function UserDashboard() {
         .topbar {
           position: sticky; top: 0; z-index: 100;
           background: #fff;
-          border-bottom: 1px solid #F0E8DC;
+          border-bottom: 1px solid #E4DEFF;
           display: flex;
           align-items: center;
           gap: 1rem;
           padding: 0 1.8rem;
           height: 58px;
-          box-shadow: 0 1px 4px rgba(28,20,16,0.06);
+          box-shadow: 0 1px 4px rgba(12,11,26,0.06);
         }
         .collapse-btn {
-          background: #F5EFE6;
+          background: #F4F2FF;
           border: none;
           border-radius: 8px;
           width: 34px; height: 34px;
           font-size: 0.75rem;
           cursor: pointer;
-          color: #5C4A38;
+          color: #3D3070;
           display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
           transition: background 0.15s;
         }
-        .collapse-btn:hover { background: #EDE3D8; }
+        .collapse-btn:hover { background: #E4DEFF; }
         .topbar-title {
           flex: 1;
-          font-family: 'Playfair Display', serif;
-          font-size: 1.1rem;
+          font-family: "'DM Sans', sans-serif;
+          font-size: 1rem;
           font-weight: 800;
-          color: #1C1410;
+          color: #12101E;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
         .topbar-actions { display: flex; align-items: center; gap: 0.6rem; }
         .icon-btn {
-          background: #F5EFE6;
+          background: #F4F2FF;
           border: none;
           border-radius: 8px;
           width: 34px; height: 34px;
@@ -959,7 +1006,7 @@ export default function UserDashboard() {
           display: flex; align-items: center; justify-content: center;
           transition: background 0.15s;
         }
-        .icon-btn:hover { background: #EDE3D8; }
+        .icon-btn:hover { background: #E4DEFF; }
 
         /* notification panel */
         .notif-panel {
@@ -968,9 +1015,9 @@ export default function UserDashboard() {
           right: 0;
           width: 280px;
           background: #fff;
-          border: 1px solid #F0E8DC;
+          border: 1px solid #E4DEFF;
           border-radius: 12px;
-          box-shadow: 0 8px 28px rgba(28,20,16,0.13);
+          box-shadow: 0 8px 28px rgba(12,11,26,0.15);
           z-index: 400;
         }
         .notif-hdr {
@@ -978,13 +1025,13 @@ export default function UserDashboard() {
           justify-content: space-between;
           align-items: center;
           padding: 0.9rem 1rem 0.7rem;
-          border-bottom: 1px solid #F0E8DC;
+          border-bottom: 1px solid #E4DEFF;
         }
         .notif-hdr-title {
-          font-family: 'Playfair Display', serif;
+          font-family: 'DM Sans', sans-serif;
           font-size: 0.88rem;
           font-weight: 800;
-          color: #1C1410;
+          color: #12101E;
         }
 
         /* ── Content ── */
@@ -1004,19 +1051,19 @@ export default function UserDashboard() {
         }
         .stat-card {
           background: #fff;
-          border: 1px solid #F0E8DC;
+          border: 1px solid #E4DEFF;
           border-radius: 14px;
           padding: 1.4rem 1.5rem;
         }
         .stat-icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
-        .stat-lbl { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #A89070; margin-bottom: 0.35rem; }
-        .stat-val { font-size: 1.8rem; font-weight: 800; color: #1C1410; line-height: 1; }
-        .stat-sub { font-size: 0.75rem; color: #A89070; margin-top: 0.3rem; }
+        .stat-lbl { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #9CA3AF; margin-bottom: 0.35rem; }
+        .stat-val { font-size: 1.8rem; font-weight: 800; color: #12101E; line-height: 1; }
+        .stat-sub { font-size: 0.75rem; color: #9CA3AF; margin-top: 0.3rem; }
 
         /* ── Section header ── */
         .sec-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-        .sec-title { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 800; color: #1C1410; }
-        .sec-link { background: none; border: none; color: #C19A4A; font-size: 0.82rem; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+        .sec-title { font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 800; color: #12101E; }
+        .sec-link { background: none; border: none; color: #FFD600; font-size: 0.82rem; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
         .sec-link:hover { text-decoration: underline; }
 
         /* ── Quick actions ── */
@@ -1024,16 +1071,16 @@ export default function UserDashboard() {
         .qa-btn {
           flex: 1; min-width: 120px;
           background: #fff;
-          border: 1.5px solid #F0E8DC;
+          border: 1.5px solid #E4DEFF;
           border-radius: 12px;
           padding: 1.1rem 1rem;
           text-align: center;
           cursor: pointer;
           transition: border-color 0.15s, box-shadow 0.15s;
         }
-        .qa-btn:hover { border-color: #C19A4A; box-shadow: 0 4px 14px rgba(193,154,74,0.12); }
+        .qa-btn:hover { border-color: #FFD600; box-shadow: 0 4px 14px rgba(255,214,0,0.14); }
         .qa-icon { font-size: 1.6rem; margin-bottom: 0.4rem; }
-        .qa-label { font-size: 0.8rem; font-weight: 700; color: #1C1410; }
+        .qa-label { font-size: 0.8rem; font-weight: 700; color: #12101E; }
 
         /* ── Two-column ── */
         .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
@@ -1042,7 +1089,7 @@ export default function UserDashboard() {
         /* ── Table wrapper ── */
         .tbl-wrap {
           background: #fff;
-          border: 1px solid #F0E8DC;
+          border: 1px solid #E4DEFF;
           border-radius: 14px;
           overflow: hidden;
           margin-bottom: 1.4rem;
@@ -1051,27 +1098,27 @@ export default function UserDashboard() {
           display: flex;
           gap: 0.8rem;
           padding: 1rem 1.2rem;
-          border-bottom: 1px solid #F0E8DC;
+          border-bottom: 1px solid #E4DEFF;
           flex-wrap: wrap;
           align-items: center;
         }
         .srch-wrap {
           display: flex; align-items: center; gap: 0.5rem;
-          background: #F9F5EF;
-          border: 1px solid #F0E8DC;
+          background: #F4F2FF;
+          border: 1px solid #E4DEFF;
           border-radius: 8px;
           padding: 0.45rem 0.85rem;
           flex: 1; min-width: 160px;
         }
-        .srch-icon { font-size: 0.85rem; color: #A89070; flex-shrink: 0; }
-        .srch-inp { border: none; background: transparent; outline: none; font-size: 0.85rem; color: #1C1410; width: 100%; font-family: 'DM Sans', sans-serif; }
+        .srch-icon { font-size: 0.85rem; color: #9CA3AF; flex-shrink: 0; }
+        .srch-inp { border: none; background: transparent; outline: none; font-size: 0.85rem; color: #12101E; width: 100%; font-family: 'DM Sans', sans-serif; }
         .flt-sel {
-          background: #F9F5EF;
-          border: 1px solid #F0E8DC;
+          background: #F4F2FF;
+          border: 1px solid #E4DEFF;
           border-radius: 8px;
           padding: 0.45rem 0.85rem;
           font-size: 0.82rem;
-          color: #1C1410;
+          color: #12101E;
           font-family: 'DM Sans', sans-serif;
           cursor: pointer;
           outline: none;
@@ -1084,16 +1131,16 @@ export default function UserDashboard() {
           font-weight: 700;
           letter-spacing: 0.1em;
           text-transform: uppercase;
-          color: #A89070;
-          background: #FAF6F1;
-          border-bottom: 1px solid #F0E8DC;
+          color: #9CA3AF;
+          background: #F8F7FF;
+          border-bottom: 1px solid #E4DEFF;
           white-space: nowrap;
         }
-        .tbl-wrap tbody td { padding: 0.85rem 1.1rem; font-size: 0.85rem; color: #1C1410; border-bottom: 1px solid #FAF6F1; }
+        .tbl-wrap tbody td { padding: 0.85rem 1.1rem; font-size: 0.85rem; color: #12101E; border-bottom: 1px solid #F4F2FF; }
         .tbl-wrap tbody tr:last-child td { border-bottom: none; }
         .tbl-wrap tbody tr { cursor: pointer; transition: background 0.12s; }
-        .tbl-wrap tbody tr:hover { background: #FAF6F1; }
-        .tbl-foot { padding: 0.75rem 1.2rem; font-size: 0.75rem; color: #A89070; border-top: 1px solid #F0E8DC; background: #FAF6F1; }
+        .tbl-wrap tbody tr:hover { background: #F8F7FF; }
+        .tbl-foot { padding: 0.75rem 1.2rem; font-size: 0.75rem; color: #9CA3AF; border-top: 1px solid #E4DEFF; background: #F8F7FF; }
 
         /* ── Action / badge buttons ── */
         .act-btn {
@@ -1106,63 +1153,63 @@ export default function UserDashboard() {
           cursor: pointer;
           font-family: 'DM Sans', sans-serif;
         }
-        .act-view { background: #F0E8DC; color: #5C4A38; }
-        .act-view:hover { background: #E8DDD0; }
-        .pay-type-dep { background: #EAF4FC; color: #1A5276; }
-        .pay-type-bal { background: #EAFAF1; color: #1A6B3A; }
-        .pay-conf { background: #D4EDDA; color: #155724; }
-        .pay-pend { background: #FEF9E7; color: #92620A; }
+        .act-view { background: #DFFBFF; color: #006680; }
+        .act-view:hover { background: #B0F0FA; }
+        .pay-type-dep { background: #DFFBFF; color: #006680; }
+        .pay-type-bal { background: #FFFBE0; color: #7A6200; }
+        .pay-conf { background: #FFFBE0; color: #7A6200; }
+        .pay-pend { background: #FFF0F8; color: #CC005A; }
 
         /* ── Profile ── */
         .profile-shell { display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; align-items: start; }
         @media (max-width: 860px) { .profile-shell { grid-template-columns: 1fr; } }
         .profile-card {
           background: #fff;
-          border: 1px solid #F0E8DC;
+          border: 1px solid #E4DEFF;
           border-radius: 16px;
           padding: 2rem 1.5rem;
           text-align: center;
         }
         .profile-avatar-big {
           width: 72px; height: 72px; border-radius: 50%;
-          background: linear-gradient(135deg, #C19A4A, #8B6914);
+          background: linear-gradient(135deg, #FFD600, #DC006E);
           color: #fff; font-size: 1.8rem; font-weight: 800;
           display: flex; align-items: center; justify-content: center;
           margin: 0 auto 1rem;
         }
-        .profile-name { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 900; color: #1C1410; }
-        .profile-email { font-size: 0.82rem; color: #A89070; margin-top: 0.25rem; }
+        .profile-name { font-family: 'DM Sans', sans-serif; font-size: 1.15rem; font-weight: 900; color: #12101E; }
+        .profile-email { font-size: 0.82rem; color: #9CA3AF; margin-top: 0.25rem; }
         .profile-badge {
           display: inline-block; margin-top: 0.7rem;
-          background: #D4EDDA; color: #155724;
+          background: #FFFBE0; color: #7A6200;
           font-size: 0.72rem; font-weight: 700;
           padding: 3px 10px; border-radius: 99px;
         }
-        .profile-stat-row { display: flex; justify-content: center; gap: 1.5rem; margin-top: 1.3rem; padding-top: 1.1rem; border-top: 1px solid #F0E8DC; }
+        .profile-stat-row { display: flex; justify-content: center; gap: 1.5rem; margin-top: 1.3rem; padding-top: 1.1rem; border-top: 1px solid #E4DEFF; }
         .profile-stat { text-align: center; }
-        .profile-stat-num { font-size: 1.3rem; font-weight: 800; color: #1C1410; }
-        .profile-stat-lbl { font-size: 0.68rem; color: #A89070; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 1px; }
-        .profile-details { background: #fff; border: 1px solid #F0E8DC; border-radius: 14px; padding: 1.5rem 1.6rem; }
+        .profile-stat-num { font-size: 1.3rem; font-weight: 800; color: #12101E; }
+        .profile-stat-lbl { font-size: 0.68rem; color: #9CA3AF; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 1px; }
+        .profile-details { background: #fff; border: 1px solid #E4DEFF; border-radius: 14px; padding: 1.5rem 1.6rem; }
         .info-grid { display: flex; flex-direction: column; gap: 0; }
-        .info-item { display: flex; justify-content: space-between; align-items: center; padding: 0.7rem 0; border-bottom: 1px solid #FAF6F1; gap: 1rem; flex-wrap: wrap; }
+        .info-item { display: flex; justify-content: space-between; align-items: center; padding: 0.7rem 0; border-bottom: 1px solid #F4F2FF; gap: 1rem; flex-wrap: wrap; }
         .info-item:last-child { border-bottom: none; }
-        .info-item label { font-size: 0.78rem; font-weight: 700; color: #A89070; text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0; }
-        .info-item span { font-size: 0.88rem; font-weight: 600; color: #1C1410; text-align: right; word-break: break-all; }
+        .info-item label { font-size: 0.78rem; font-weight: 700; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0; }
+        .info-item span { font-size: 0.88rem; font-weight: 600; color: #12101E; text-align: right; word-break: break-all; }
         .prof-btn {
           width: 100%;
           padding: 0.7rem 1rem;
           background: #fff;
-          border: 1.5px solid #F0E8DC;
+          border: 1.5px solid #E4DEFF;
           border-radius: 9px;
           font-family: 'DM Sans', sans-serif;
           font-size: 0.88rem;
           font-weight: 600;
-          color: #1C1410;
+          color: #12101E;
           cursor: pointer;
           text-align: left;
           transition: border-color 0.15s, background 0.15s;
         }
-        .prof-btn:hover { border-color: #C19A4A; background: #FAF6F1; }
+        .prof-btn:hover { border-color: #FFD600; background: #F8F7FF; }
 
         /* ── Skeleton pulse ── */
         @keyframes pulse {
@@ -1184,14 +1231,9 @@ export default function UserDashboard() {
         {/* ══ SIDEBAR ══ */}
         <aside className={`sidebar${sidebarOpen ? "" : " closed"}`}>
           <Link href="/" className="sb-logo">
-            <span>
-              F<span className="gold">S</span>
-            </span>
+            <img src="/logo.png" alt="FrankStat" className="sb-logo-img"/>
             {sidebarOpen && (
-              <>
-                <span className="sb-txt">FRANKSTAT</span>
-                <span className="pill">MY ACCOUNT</span>
-              </>
+              <span className="pill">MY ACCOUNT</span>
             )}
           </Link>
           <nav className="sb-nav">
@@ -1306,7 +1348,7 @@ export default function UserDashboard() {
                 <div className="stats-row">
                   <div
                     className="stat-card"
-                    style={{ borderTop: "3px solid #C19A4A" }}
+                    style={{ borderTop: "3px solid #FFD600" }}
                   >
                     <div className="stat-icon">🗂️</div>
                     <div className="stat-lbl">Total Orders</div>
@@ -1315,7 +1357,7 @@ export default function UserDashboard() {
                   </div>
                   <div
                     className="stat-card"
-                    style={{ borderTop: "3px solid #1A6B3A" }}
+                    style={{ borderTop: "3px solid #00CCDD" }}
                   >
                     <div className="stat-icon">✅</div>
                     <div className="stat-lbl">Completed</div>
@@ -1324,7 +1366,7 @@ export default function UserDashboard() {
                   </div>
                   <div
                     className="stat-card"
-                    style={{ borderTop: "3px solid #1A5276" }}
+                    style={{ borderTop: "3px solid #DC006E" }}
                   >
                     <div className="stat-icon">💰</div>
                     <div className="stat-lbl">Total Paid</div>
@@ -1338,7 +1380,7 @@ export default function UserDashboard() {
                   </div>
                   <div
                     className="stat-card"
-                    style={{ borderTop: "3px solid #C0392B" }}
+                    style={{ borderTop: "3px solid #FFD600" }}
                   >
                     <div className="stat-icon">⏳</div>
                     <div className="stat-lbl">Pending Balance</div>
@@ -1347,7 +1389,7 @@ export default function UserDashboard() {
                       style={{
                         fontSize: "1.3rem",
                         color:
-                          stats.pendingBalance > 0 ? "#C0392B" : "#1A6B3A",
+                          stats.pendingBalance > 0 ? "#DC006E" : "#00CCDD",
                       }}
                     >
                       {fmt(stats.pendingBalance)}
@@ -1552,11 +1594,15 @@ export default function UserDashboard() {
                     {(
                       [
                         "Pending",
-                        "In Progress",
-                        "Awaiting Approval",
-                        "Printing",
+                        "In Production",
+                        "Quality Check",
+                        "Ready",
+                        "Delivering",
                         "Completed",
+                        "Payment Failed",
+                        "Payment Error",
                         "Cancelled",
+                        "Refunded",
                       ] as ProjectStatus[]
                     ).map((s) => (
                       <option key={s}>{s}</option>
@@ -1636,44 +1682,46 @@ export default function UserDashboard() {
                             </td>
                             <td
                               style={{
-                                color:
-                                  o.totalPrice - o.depositAmount > 0
-                                    ? "#C0392B"
-                                    : "#1A6B3A",
+                                color: o.balanceDue > 0 ? "#CC005A" : "#15803D",
                                 fontWeight: 600,
                               }}
                             >
-                              {fmt(o.totalPrice - o.depositAmount)}
+                              {fmt(o.balanceDue)}
                             </td>
                             <td>
                               <Badge
-                                label={
-                                  STATUS_META[o.uiStatus].icon +
-                                  " " +
-                                  o.uiStatus
-                                }
+                                label={STATUS_META[o.uiStatus].icon + " " + o.uiStatus}
                                 color={STATUS_META[o.uiStatus].color}
                                 bg={STATUS_META[o.uiStatus].bg}
                               />
                             </td>
                             <td
                               style={{
-                                color: "#A89070",
+                                color: "#9CA3AF",
                                 fontSize: "0.8rem",
                                 whiteSpace: "nowrap",
                               }}
                             >
                               {fmtD(o.createdAt)}
                             </td>
-                            <td
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <button
-                                className="act-btn act-view"
-                                onClick={() => setOrderDetailModal(o)}
-                              >
-                                View
-                              </button>
+                            <td onClick={(e) => e.stopPropagation()}>
+                              <div style={{ display: "flex", gap: 5 }}>
+                                <button
+                                  className="act-btn act-view"
+                                  onClick={() => setOrderDetailModal(o)}
+                                >
+                                  View
+                                </button>
+                                {o.balanceDue > 0 && BALANCE_ALLOWED.includes(o.status) && (
+                                  <button
+                                    className="act-btn"
+                                    style={{ background: "#FFFBE0", color: "#7A6200", border: "1px solid #FFD600" }}
+                                    onClick={() => { setPayBalanceOrder(o); setPayBalancePhone(o.mpesaPhone ?? ""); }}
+                                  >
+                                    Pay Balance
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))
@@ -1882,11 +1930,36 @@ export default function UserDashboard() {
                   ))}
                 </div>
 
+                {/* ── Outstanding Balances ── */}
+                {orders.filter(o => o.balanceDue > 0 && BALANCE_ALLOWED.includes(o.status)).length > 0 && (
+                  <div style={{ background: "#FFFBE0", border: "1.5px solid #FFD600", borderRadius: 12, padding: "14px 18px", marginBottom: "1.4rem" }}>
+                    <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: "0.88rem", color: "#7A6200", marginBottom: 10 }}>
+                      ⚠️ Outstanding Balances
+                    </div>
+                    {orders.filter(o => o.balanceDue > 0 && BALANCE_ALLOWED.includes(o.status)).map(o => (
+                      <div key={o.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid rgba(255,214,0,0.25)", flexWrap: "wrap" }}>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#12101E" }}>🖨️ {o.serviceName}</div>
+                          <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginTop: 2 }}>
+                            {STATUS_META[o.uiStatus].icon} {o.uiStatus} · Balance due: <strong style={{ color: "#CC005A" }}>{fmt(o.balanceDue)}</strong>
+                          </div>
+                        </div>
+                        <button
+                          style={{ background: "#0C0B1A", color: "#FFD600", border: "none", borderRadius: 7, padding: "7px 16px", fontFamily: "'DM Sans',sans-serif", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer" }}
+                          onClick={() => { setPayBalanceOrder(o); setPayBalancePhone(o.mpesaPhone ?? ""); }}
+                        >
+                          Pay Now
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="tbl-wrap">
                   <div
                     style={{
                       padding: "1rem 1.5rem",
-                      borderBottom: "1px solid #F0E8DC",
+                      borderBottom: "1px solid #E4DEFF",
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
@@ -1894,16 +1967,16 @@ export default function UserDashboard() {
                   >
                     <span
                       style={{
-                        fontFamily: "'Playfair Display',serif",
+                        fontFamily: "'DM Sans',sans-serif",
                         fontSize: "0.95rem",
                         fontWeight: 800,
-                        color: "#1C1410",
+                        color: "#12101E",
                       }}
                     >
                       All Transactions
                     </span>
                     <span
-                      style={{ fontSize: "0.78rem", color: "#A89070" }}
+                      style={{ fontSize: "0.78rem", color: "#9CA3AF" }}
                     >
                       Read-only · All payments via M-Pesa
                     </span>
@@ -2072,7 +2145,7 @@ export default function UserDashboard() {
                   >
                     <div
                       style={{
-                        fontFamily: "'Playfair Display',serif",
+                        fontFamily: "'DM Sans',serif",
                         fontWeight: 900,
                         fontSize: "1rem",
                         color: "#1C1410",
@@ -2501,6 +2574,51 @@ export default function UserDashboard() {
               }}
             >
               Done
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* ══════════ PAY BALANCE MODAL ══════════ */}
+      {payBalanceOrder && (
+        <Modal
+          title="Complete Payment"
+          onClose={() => { setPayBalanceOrder(null); setPayBalancePhone(""); }}
+        >
+          <div style={{ marginBottom: "1rem" }}>
+            <div style={{ background: "#FFFBE0", border: "1px solid #FFD600", borderRadius: 8, padding: "10px 14px", marginBottom: "1rem" }}>
+              <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "#7A6200" }}>🖨️ {payBalanceOrder.serviceName}</div>
+              <div style={{ fontSize: "0.82rem", color: "#9CA3AF", marginTop: 3 }}>
+                Balance due: <strong style={{ color: "#CC005A", fontSize: "1rem" }}>{fmt(payBalanceOrder.balanceDue)}</strong>
+              </div>
+            </div>
+            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: "0.35rem" }}>
+              M-Pesa Phone Number
+            </label>
+            <input
+              type="tel"
+              placeholder="e.g. 0712 345 678"
+              value={payBalancePhone}
+              onChange={(e) => setPayBalancePhone(e.target.value)}
+              style={{ width: "100%", background: "#F4F2FF", border: "1.5px solid #E4DEFF", borderRadius: 8, padding: "10px 12px", fontFamily: "'DM Sans',sans-serif", fontSize: "0.88rem", color: "#12101E", outline: "none" }}
+            />
+            <p style={{ fontSize: "0.75rem", color: "#9CA3AF", marginTop: "0.4rem" }}>
+              You will receive an M-Pesa STK push prompt on this number to complete the payment.
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: "0.6rem" }}>
+            <button
+              onClick={() => { setPayBalanceOrder(null); setPayBalancePhone(""); }}
+              style={{ flex: 1, padding: "0.8rem", background: "#F4F2FF", border: "1.5px solid #E4DEFF", borderRadius: 8, color: "#374151", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, cursor: "pointer", fontSize: "0.88rem" }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handlePayBalance}
+              disabled={payBalanceSaving || !payBalancePhone.trim()}
+              style={{ flex: 1, padding: "0.8rem", background: payBalanceSaving ? "#3D3070" : "#0C0B1A", border: "none", borderRadius: 8, color: "#FFD600", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, cursor: payBalanceSaving ? "default" : "pointer", fontSize: "0.88rem", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: (!payBalancePhone.trim() && !payBalanceSaving) ? 0.5 : 1 }}
+            >
+              {payBalanceSaving ? <><span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.25)", borderTopColor: "#FFD600", borderRadius: "50%", animation: "spin 0.7s linear infinite", display: "inline-block" }}/> Sending…</> : "Send M-Pesa Prompt"}
             </button>
           </div>
         </Modal>

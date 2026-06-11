@@ -24,7 +24,7 @@ type Service = {
 
 type Dimension = { label: string; price: number };
 type Review = { name: string; role: string; text: string; rating: number };
-type PortfolioItem = { title: string; category: string; color: string };
+type PortfolioItem = { title: string; category: string; color: string; image: string };
 
 type OrderStatus =
   | "idle"
@@ -85,12 +85,12 @@ const REVIEWS: Review[] = [
 ];
 
 const PORTFOLIO: PortfolioItem[] = [
-  { title: "Rift Valley Marathon Banners",    category: "Banners",       color: "#C19A4A" },
-  { title: "Westgate Mall 3D Signage",        category: "3D Signage",    color: "#4F46E5" },
-  { title: "Corporate Jersey Set – 200 pcs",  category: "Sublimation",   color: "#0D9488" },
-  { title: "Food Court Vinyl Wraps",          category: "Vinyl Cutting",  color: "#DC2626" },
-  { title: "Tech Startup Business Cards",     category: "Business Cards", color: "#7C3AED" },
-  { title: "School Sports Kit – Heat Press",  category: "Heat Press",    color: "#D97706" },
+  { title: "Event Banners",                    category: "Banners",       color: "#00AEEF", image: "/banners.png" },
+  { title: "Outdoor 3D Signage",               category: "3D Signage",    color: "#EC008C", image: "/3d-signage.png" },
+  { title: "Local Team Jersey Set – 200 pcs",  category: "Sublimation",   color: "#00AEEF", image: "/sublimation.png" },
+  { title: "Food Court Vinyl Wraps",           category: "Vinyl Cutting",  color: "#EC008C", image: "/vinyl.png" },
+  { title: "Tech Startup Vinyls",              category: "Vinyl Cutting",  color: "#FFE500", image: "/vinyl.png" },
+  { title: "School Sports Kit – Heat Press",   category: "Heat Press",    color: "#00AEEF", image: "/heat-press.png" },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -102,6 +102,9 @@ export default function FrankstatPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  // Banner state
+  const [banner, setBanner] = useState<{ isActive: boolean; items: string[] } | null>(null);
 
   // UI state
   const [activeReview, setActiveReview] = useState(0);
@@ -136,6 +139,13 @@ export default function FrankstatPage() {
       .then((d) => setUser(d.user ?? null))
       .catch(() => setUser(null))
       .finally(() => setAuthLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/banner")
+      .then((r) => r.json())
+      .then((d) => setBanner(d))
+      .catch(() => {});
   }, []);
 
   // Auto-fill phone from profile if available
@@ -288,20 +298,24 @@ export default function FrankstatPage() {
         html { scroll-behavior: smooth; }
 
         :root {
+          --black: #000000;
           --white: #FFFFFF;
-          --off: #F9F6F2;
-          --ink: #1C1410;
-          --ink-soft: #5C4A38;
-          --gold: #C19A4A;
-          --gold-light: #E8C97A;
-          --cream: #F0E8DC;
-          --cream-deeper: #DDD0BC;
-          --cream-border: #E2D5C3;
-          --error: #C0392B;
-          --success: #5A9E6F;
-          --navy: #0F172A;
-          --teal: #0D9488;
-          --indigo: #4F46E5;
+          --off: #F4FCFF;
+          --ink: #111827;
+          --ink-soft: #374151;
+          --cyan: #00AEEF;
+          --cyan-dark: #0087C0;
+          --cyan-light: #7DD8F5;
+          --magenta: #EC008C;
+          --magenta-dark: #B5006B;
+          --magenta-light: #F566BA;
+          --yellow: #FFE500;
+          --yellow-dark: #CCB800;
+          --cream: #E0F5FD;
+          --cream-border: #BAE6F8;
+          --error: #DC2626;
+          --success: #059669;
+          --navy: #050B14;
         }
 
         body {
@@ -338,7 +352,7 @@ export default function FrankstatPage() {
           text-transform: capitalize; transition: color 0.2s, background 0.2s;
           text-decoration: none;
         }
-        .nav-links li a:hover { color: var(--ink); background: var(--off); }
+        .nav-links li a:hover { color: var(--cyan); background: rgba(0,174,239,0.07); }
 
         .nav-right { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
 
@@ -352,10 +366,10 @@ export default function FrankstatPage() {
           white-space: nowrap; text-decoration: none;
           display: inline-flex; align-items: center;
         }
-        .nav-cta:hover { background: #3D2B1A; }
+        .nav-cta:hover { background: #1F2937; }
 
         .nav-signup {
-          background: linear-gradient(135deg, #C19A4A, #D4AC5A);
+          background: linear-gradient(135deg, #EC008C, #B5006B);
           color: var(--white);
           border: none; border-radius: 7px;
           padding: 0.5rem 1.1rem;
@@ -364,7 +378,7 @@ export default function FrankstatPage() {
           cursor: pointer; transition: opacity 0.2s, transform 0.15s;
           white-space: nowrap; text-decoration: none;
           display: inline-flex; align-items: center;
-          box-shadow: 0 2px 10px rgba(193,154,74,0.4);
+          box-shadow: 0 2px 10px rgba(236,0,140,0.35);
         }
         .nav-signup:hover { opacity: 0.9; transform: translateY(-1px); }
 
@@ -372,20 +386,20 @@ export default function FrankstatPage() {
         .user-menu-wrap { position: relative; }
         .user-avatar-btn {
           width: 36px; height: 36px; border-radius: 50%;
-          background: linear-gradient(135deg, #C19A4A, #8B6914);
+          background: linear-gradient(135deg, #00AEEF, #0087C0);
           color: var(--white);
           border: none; cursor: pointer;
           font-family: 'Playfair Display', serif;
           font-size: 0.95rem; font-weight: 700;
           display: flex; align-items: center; justify-content: center;
           transition: opacity 0.2s, transform 0.15s; position: relative;
-          box-shadow: 0 2px 8px rgba(193,154,74,0.4);
+          box-shadow: 0 2px 8px rgba(0,174,239,0.4);
         }
         .user-avatar-btn:hover { opacity: 0.85; transform: scale(1.05); }
         .user-avatar-btn::after {
           content: ''; position: absolute; bottom: -2px; right: -2px;
           width: 10px; height: 10px; border-radius: 50%;
-          background: #1A6B3A; border: 2px solid #fff;
+          background: #059669; border: 2px solid #fff;
         }
         .user-dropdown {
           position: absolute; top: calc(100% + 10px); right: 0;
@@ -445,21 +459,20 @@ export default function FrankstatPage() {
           padding: 0.5rem 0; cursor: pointer; text-transform: capitalize;
           text-decoration: none;
         }
-        .mobile-menu a:hover { color: var(--ink); }
+        .mobile-menu a:hover { color: var(--cyan); }
 
         /* ── OFFER BANNER ── */
         .offer-banner {
-          background: linear-gradient(90deg, #0F172A 0%, #1E3A5F 35%, #1a2a50 65%, #0F172A 100%);
+          background: linear-gradient(90deg, #0087C0 0%, #00AEEF 30%, #EC008C 70%, #B5006B 100%);
           overflow: hidden;
           padding: 0.55rem 0;
-          border-bottom: 1px solid rgba(193,154,74,0.2);
         }
         .offer-ticker {
           display: flex; gap: 4rem;
           animation: ticker 28s linear infinite;
           white-space: nowrap;
         }
-        .offer-ticker span { font-size: 0.78rem; color: var(--gold-light); font-weight: 500; }
+        .offer-ticker span { font-size: 0.78rem; color: #fff; font-weight: 600; }
         @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
         /* ── HERO ── */
@@ -467,30 +480,30 @@ export default function FrankstatPage() {
           display: grid; grid-template-columns: 1fr 1fr;
           min-height: 88vh; align-items: center;
           padding: 4rem 5vw; gap: 4rem;
-          background: linear-gradient(135deg, #0F172A 0%, #1a2640 30%, #1C3D5A 60%, #0D1B2A 100%);
+          background: linear-gradient(135deg, #FFE500, #050B14 0%, #090F1C 35%, #050B14 100%);
           position: relative; overflow: hidden;
         }
-        /* Gold radial glow top-right */
+        /* Cyan radial glow top-right */
         .hero::before {
           content: '';
           position: absolute; top: -25%; right: 5%;
           width: 520px; height: 520px;
-          background: radial-gradient(circle, rgba(193,154,74,0.16) 0%, rgba(79,70,229,0.05) 45%, transparent 70%);
+          background: radial-gradient(circle, rgba(0,174,239,0.18) 0%, rgba(0,174,239,0.04) 50%, transparent 70%);
           border-radius: 50%; pointer-events: none;
         }
-        /* Teal glow bottom-left */
+        /* Magenta glow bottom-left */
         .hero::after {
           content: '';
           position: absolute; bottom: -15%; left: -5%;
           width: 380px; height: 380px;
-          background: radial-gradient(circle, rgba(13,148,136,0.12) 0%, transparent 65%);
+          background: radial-gradient(circle, rgba(236,0,140,0.14) 0%, transparent 65%);
           border-radius: 50%; pointer-events: none;
         }
         .hero-eyebrow {
           display: inline-block;
-          background: rgba(193,154,74,0.14);
-          border: 1px solid rgba(193,154,74,0.35);
-          color: var(--gold-light); font-size: 0.75rem;
+          background: rgba(0,174,239,0.12);
+          border: 1px solid rgba(0,174,239,0.4);
+          color: var(--cyan-light); font-size: 0.75rem;
           font-weight: 700; letter-spacing: 0.18em;
           text-transform: uppercase;
           padding: 0.35rem 0.9rem; border-radius: 99px;
@@ -504,7 +517,7 @@ export default function FrankstatPage() {
         }
         .hero h1 em {
           font-style: italic;
-          background: linear-gradient(90deg, #C19A4A, #F0C060, #D4AC5A);
+          background: linear-gradient(90deg, #FFE500, #00AEEF, #EC008C);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -512,88 +525,87 @@ export default function FrankstatPage() {
         .hero-desc { font-size: 1.05rem; color: rgba(255,255,255,0.68); line-height: 1.8; margin-bottom: 2rem; max-width: 480px; }
         .hero-btns { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-bottom: 2rem; }
         .btn-primary {
-          background: linear-gradient(135deg, #C19A4A 0%, #8B6914 100%);
+          background: linear-gradient(135deg, #00AEEF 0%, #0087C0 100%);
           color: var(--white);
           padding: 0.85rem 1.8rem; border: none; border-radius: 8px;
           font-family: 'DM Sans', sans-serif;
           font-size: 0.95rem; font-weight: 700;
           cursor: pointer; transition: opacity 0.2s, transform 0.15s;
-          box-shadow: 0 4px 18px rgba(193,154,74,0.45);
+          box-shadow: 0 4px 18px rgba(0,174,239,0.45);
         }
-        .btn-primary:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(193,154,74,0.5); }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,174,239,0.5); }
         .btn-secondary {
           background: transparent; color: var(--ink);
           padding: 0.85rem 1.8rem;
-          border: 2px solid var(--cream-deeper); border-radius: 8px;
+          border: 2px solid #D1D5DB; border-radius: 8px;
           font-family: 'DM Sans', sans-serif;
           font-size: 0.95rem; font-weight: 600;
           cursor: pointer; transition: border-color 0.2s, background 0.2s, color 0.2s;
         }
-        .btn-secondary:hover { border-color: var(--ink); background: var(--off); }
+        .btn-secondary:hover { border-color: var(--cyan); background: rgba(0,174,239,0.06); color: var(--cyan-dark); }
         /* Override btn-secondary inside the dark hero */
         .hero .btn-secondary {
           background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9);
           border-color: rgba(255,255,255,0.2); backdrop-filter: blur(4px);
         }
-        .hero .btn-secondary:hover { border-color: rgba(193,154,74,0.6); background: rgba(193,154,74,0.12); }
+        .hero .btn-secondary:hover { border-color: var(--cyan); background: rgba(0,174,239,0.15); color: var(--cyan-light); }
         .hero-stats { display: flex; gap: 2rem; }
         .stat-item {}
         .stat-number {
           font-family: 'Playfair Display', serif;
-          font-size: 2rem; font-weight: 900; color: var(--gold-light); line-height: 1;
+          font-size: 2rem; font-weight: 900; color: var(--cyan-light); line-height: 1;
         }
         .stat-label { font-size: 0.78rem; color: rgba(255,255,255,0.48); margin-top: 0.15rem; }
 
         .hero-visual { position: relative; z-index: 1; }
         .hero-img-wrap {
-          background: linear-gradient(135deg, #1a2a4a 0%, #243a60 35%, #1C3D5A 65%, #0D2233 100%);
+          background: linear-gradient(135deg, #090F1C 0%, #0A1525 40%, #050B14 100%);
           border-radius: 24px; aspect-ratio: 1/1;
           display: flex; align-items: center; justify-content: center;
           overflow: hidden;
-          border: 1px solid rgba(193,154,74,0.18);
+          border: 1px solid rgba(0,174,239,0.2);
           box-shadow: 0 36px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04);
           position: relative;
         }
-        /* Rotating conic gradient inside visual */
+        /* Rotating CMY conic gradient */
         .hero-img-wrap::before {
           content: '';
           position: absolute; top: -50%; left: -50%;
           width: 200%; height: 200%;
           background: conic-gradient(
             from 0deg at 50% 50%,
-            rgba(193,154,74,0.06) 0deg, rgba(79,70,229,0.07) 90deg,
-            rgba(13,148,136,0.06) 180deg, rgba(193,154,74,0.05) 270deg,
-            rgba(193,154,74,0.06) 360deg
+            rgba(0,174,239,0.07) 0deg, rgba(236,0,140,0.08) 120deg,
+            rgba(255,229,0,0.05) 240deg, rgba(0,174,239,0.07) 360deg
           );
           animation: rotate 24s linear infinite;
           pointer-events: none;
         }
         @keyframes rotate { to { transform: rotate(360deg); } }
         .hero-img-placeholder { text-align: center; padding: 2rem; position: relative; }
-        .hero-img-icon { font-size: 5rem; margin-bottom: 1rem; filter: drop-shadow(0 0 24px rgba(193,154,74,0.55)); }
+        .hero-img-icon { font-size: 5rem; margin-bottom: 1rem; filter: drop-shadow(0 0 24px rgba(0,174,239,0.55)); }
         .hero-badge {
           position: absolute; bottom: -1rem; left: -1.5rem;
-          background: linear-gradient(135deg, #1a3050, #233050);
+          background: linear-gradient(135deg, #090F1C, #0A1525);
           border-radius: 14px;
           padding: 0.9rem 1.3rem;
           box-shadow: 0 10px 32px rgba(0,0,0,0.45);
-          border: 1px solid rgba(193,154,74,0.22);
+          border: 1px solid rgba(0,174,239,0.25);
           display: flex; flex-direction: column; align-items: center;
         }
         .hero-badge-num {
           font-family: 'Playfair Display', serif;
-          font-size: 1.5rem; font-weight: 900; color: var(--gold-light);
+          font-size: 1.5rem; font-weight: 900; color: var(--cyan-light);
         }
         .hero-badge-txt { font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.55); }
 
         /* ── SERVICES ── */
-        .services-section { padding: 5rem 5vw; background: var(--off); }
+        .services-section { padding: 5rem 5vw; background: var(--white); }
         .section-label {
           font-size: 0.72rem; font-weight: 700; letter-spacing: 0.2em;
-          text-transform: uppercase; color: var(--gold);
+          text-transform: uppercase; color: var(--cyan);
           display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem;
         }
-        .section-divider { width: 40px; height: 3px; background: linear-gradient(90deg, #C19A4A, #E8C97A); border-radius: 99px; margin-bottom: 1rem; }
+        .section-divider { width: 40px; height: 3px; background: linear-gradient(90deg, #00AEEF, #EC008C, #FFE500); border-radius: 99px; margin-bottom: 1rem; }
         .section-title {
           font-family: 'Playfair Display', serif;
           font-size: clamp(1.8rem, 3.5vw, 2.6rem);
@@ -618,15 +630,15 @@ export default function FrankstatPage() {
           background: linear-gradient(rgba(255,255,255,0.04), rgba(255,255,255,0));
           border-radius: 16px; pointer-events: none;
         }
-        .service-card:nth-child(1) { background: linear-gradient(140deg, #312E81 0%, #1E1B4B 100%); }
-        .service-card:nth-child(2) { background: linear-gradient(140deg, #065F46 0%, #022C22 100%); }
-        .service-card:nth-child(3) { background: linear-gradient(140deg, #1E3A8A 0%, #0F172A 100%); }
-        .service-card:nth-child(4) { background: linear-gradient(140deg, #7C2D12 0%, #3A1207 100%); }
-        .service-card:nth-child(5) { background: linear-gradient(140deg, #134E4A 0%, #042F2E 100%); }
-        .service-card:nth-child(6) { background: linear-gradient(140deg, #581C87 0%, #3B0764 100%); }
-        .service-card:nth-child(7) { background: linear-gradient(140deg, #831843 0%, #4C0519 100%); }
-        .service-card:nth-child(8) { background: linear-gradient(140deg, #1E293B 0%, #0F172A 100%); }
-        .service-card:hover { box-shadow: 0 20px 50px rgba(0,0,0,0.3); border-color: rgba(193,154,74,0.5); transform: translateY(-4px); }
+        .service-card:nth-child(1) { background: linear-gradient(140deg, #006994 0%, #003A55 100%); }
+        .service-card:nth-child(2) { background: linear-gradient(140deg, #8C0060 0%, #4D0033 100%); }
+        .service-card:nth-child(3) { background: linear-gradient(140deg, #007DB0 0%, #00405A 100%); }
+        .service-card:nth-child(4) { background: linear-gradient(140deg, #750050 0%, #3D002A 100%); }
+        .service-card:nth-child(5) { background: linear-gradient(140deg, #005C82 0%, #003044 100%); }
+        .service-card:nth-child(6) { background: linear-gradient(140deg, #9D006B 0%, #560039 100%); }
+        .service-card:nth-child(7) { background: linear-gradient(140deg, #004F70 0%, #00293A 100%); }
+        .service-card:nth-child(8) { background: linear-gradient(140deg, #0D1B2A 0%, #060F18 100%); }
+        .service-card:hover { box-shadow: 0 20px 50px rgba(0,0,0,0.3); border-color: rgba(0,174,239,0.5); transform: translateY(-4px); }
         .service-icon { font-size: 2.2rem; margin-bottom: 0.9rem; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3)); }
         .service-name {
           font-family: 'Playfair Display', serif;
@@ -634,30 +646,30 @@ export default function FrankstatPage() {
           margin-bottom: 0.5rem;
         }
         .service-desc { font-size: 0.83rem; color: rgba(255,255,255,0.62); line-height: 1.65; margin-bottom: 1.2rem; }
-        .service-price { font-size: 0.78rem; font-weight: 700; color: var(--gold-light); margin-bottom: 1rem; }
+        .service-price { font-size: 0.78rem; font-weight: 700; color: var(--cyan-light); margin-bottom: 1rem; }
         .service-order-btn {
           background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.85);
           border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;
           padding: 0.4rem 0.9rem; font-size: 0.8rem; font-weight: 600;
           font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
         }
-        .service-card:hover .service-order-btn { background: rgba(193,154,74,0.25); color: var(--gold-light); border-color: rgba(193,154,74,0.5); }
+        .service-card:hover .service-order-btn { background: rgba(0,174,239,0.25); color: var(--cyan-light); border-color: rgba(0,174,239,0.5); }
 
         /* ── WHY ── */
         .why-section {
           padding: 5rem 5vw;
-          background: linear-gradient(180deg, #0F172A 0%, #1a2640 50%, #0F172A 100%);
+          background: linear-gradient(180deg, #050B14 0%, #090F1C 50%, #050B14 100%);
           position: relative; overflow: hidden;
         }
         .why-section::before {
           content: '';
           position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
           width: 800px; height: 400px;
-          background: radial-gradient(ellipse, rgba(193,154,74,0.06) 0%, transparent 70%);
+          background: radial-gradient(ellipse, rgba(0,174,239,0.07) 0%, transparent 70%);
           pointer-events: none;
         }
         /* Override section text for dark background */
-        .why-section .section-label { color: var(--gold-light); }
+        .why-section .section-label { color: var(--cyan-light); }
         .why-section .section-title { color: #fff; }
         .why-section .section-desc { color: rgba(255,255,255,0.55); }
         .why-grid {
@@ -672,19 +684,19 @@ export default function FrankstatPage() {
           padding: 1.8rem 1.5rem;
           transition: background 0.2s, border-color 0.2s, transform 0.2s;
         }
-        .why-item:hover { background: rgba(255,255,255,0.07); border-color: rgba(193,154,74,0.2); transform: translateY(-2px); }
+        .why-item:hover { background: rgba(255,255,255,0.07); border-color: rgba(0,174,239,0.25); transform: translateY(-2px); }
         /* Colored icon box per card */
         .why-icon {
           font-size: 1.5rem; margin-bottom: 1rem;
           width: 52px; height: 52px; border-radius: 12px;
           display: flex; align-items: center; justify-content: center;
         }
-        .why-item:nth-child(1) .why-icon { background: linear-gradient(135deg, #F59E0B, #D97706); }
-        .why-item:nth-child(2) .why-icon { background: linear-gradient(135deg, #8B5CF6, #6D28D9); }
-        .why-item:nth-child(3) .why-icon { background: linear-gradient(135deg, #06B6D4, #0891B2); }
-        .why-item:nth-child(4) .why-icon { background: linear-gradient(135deg, #10B981, #059669); }
-        .why-item:nth-child(5) .why-icon { background: linear-gradient(135deg, #3B82F6, #1D4ED8); }
-        .why-item:nth-child(6) .why-icon { background: linear-gradient(135deg, #C19A4A, #8B6914); }
+        .why-item:nth-child(1) .why-icon { background: linear-gradient(135deg, #00AEEF, #0087C0); }
+        .why-item:nth-child(2) .why-icon { background: linear-gradient(135deg, #EC008C, #B5006B); }
+        .why-item:nth-child(3) .why-icon { background: linear-gradient(135deg, #FFE500, #CCB800); }
+        .why-item:nth-child(4) .why-icon { background: linear-gradient(135deg, #EC008C, #B5006B); }
+        .why-item:nth-child(5) .why-icon { background: linear-gradient(135deg, #00AEEF, #0087C0); }
+        .why-item:nth-child(6) .why-icon { background: linear-gradient(135deg, #FFE500, #CCB800); }
         .why-title { font-weight: 700; font-size: 0.95rem; color: #fff; margin-bottom: 0.4rem; }
         .why-desc { font-size: 0.83rem; color: rgba(255,255,255,0.52); line-height: 1.65; }
 
@@ -713,31 +725,31 @@ export default function FrankstatPage() {
           background: linear-gradient(transparent, rgba(28,20,16,0.85));
           padding: 1.5rem 1.2rem 1rem;
         }
-        .portfolio-overlay-cat { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold-light); margin-bottom: 0.2rem; }
+        .portfolio-overlay-cat { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--cyan-light); margin-bottom: 0.2rem; }
         .portfolio-overlay-title { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; color: #fff; }
 
         /* ── FORM SECTION ── */
-        .form-section { padding: 5rem 5vw; background: var(--white); }
+        .form-section { padding: 5rem 5vw; background: var(--off); }
         .form-layout {
           display: grid; grid-template-columns: 1fr 1.4fr;
           gap: 3rem; margin-top: 3rem; align-items: start;
         }
         .form-info-box { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 1.2rem; }
         .price-display {
-          background: linear-gradient(135deg, #1E3A5F 0%, #0F172A 100%);
-          border: 1px solid rgba(193,154,74,0.2);
+          background: linear-gradient(135deg, #090F1C 0%, #050B14 100%);
+          border: 1px solid rgba(0,174,239,0.25);
           border-radius: 14px; padding: 1.8rem;
           box-shadow: 0 8px 32px rgba(0,0,0,0.18);
         }
         .price-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 0.4rem; }
         .price-total {
           font-family: 'Playfair Display', serif;
-          font-size: 2.4rem; font-weight: 900; color: var(--gold-light);
+          font-size: 2.4rem; font-weight: 900; color: var(--cyan-light);
           display: flex; align-items: flex-start; gap: 0.3rem; line-height: 1.1; margin-bottom: 1.2rem;
         }
         .price-currency { font-size: 1rem; font-weight: 700; color: rgba(255,255,255,0.55); margin-top: 0.5rem; }
         .price-deposit { background: rgba(255,255,255,0.06); border-radius: 8px; padding: 0.9rem 1rem; }
-        .price-deposit-amount { font-size: 1.3rem; font-weight: 800; color: var(--gold-light); margin-top: 0.2rem; }
+        .price-deposit-amount { font-size: 1.3rem; font-weight: 800; color: var(--cyan-light); margin-top: 0.2rem; }
 
         /* Pricing table for logged-out users */
         .pricing-preview {
@@ -745,7 +757,7 @@ export default function FrankstatPage() {
           border-radius: 14px; overflow: hidden;
         }
         .pricing-preview-hdr {
-          background: linear-gradient(135deg, #1E3A5F, #0F172A); padding: 1rem 1.5rem;
+          background: linear-gradient(135deg, #090F1C, #050B14); padding: 1rem 1.5rem;
           font-family: 'Playfair Display', serif; font-size: 0.95rem;
           font-weight: 900; color: #fff;
         }
@@ -756,7 +768,7 @@ export default function FrankstatPage() {
         }
         .pricing-row:last-child { border-bottom: none; }
         .pricing-row-name { color: var(--ink); font-weight: 500; }
-        .pricing-row-price { color: var(--gold); font-weight: 700; }
+        .pricing-row-price { color: var(--cyan-dark); font-weight: 700; }
 
         .form-card {
           background: var(--white); border-radius: 16px;
@@ -771,7 +783,7 @@ export default function FrankstatPage() {
           font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: var(--ink);
           outline: none; transition: border-color 0.2s;
         }
-        .form-control:focus { border-color: var(--gold); background: #fff; }
+        .form-control:focus { border-color: var(--cyan); background: #fff; }
         .form-control option { color: var(--ink); }
 
         .dim-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.5rem; }
@@ -781,10 +793,10 @@ export default function FrankstatPage() {
           cursor: pointer; transition: all 0.15s; text-align: left; width: 100%;
           font-family: 'DM Sans', sans-serif;
         }
-        .dim-option:hover { border-color: var(--gold); background: rgba(193,154,74,0.05); }
-        .dim-option.selected { border-color: var(--gold); background: rgba(193,154,74,0.1); }
+        .dim-option:hover { border-color: var(--cyan); background: rgba(0,174,239,0.06); }
+        .dim-option.selected { border-color: var(--cyan); background: rgba(0,174,239,0.1); }
         .dim-option-label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--ink); }
-        .dim-option-price { display: block; font-size: 0.72rem; color: var(--gold); font-weight: 700; margin-top: 0.15rem; }
+        .dim-option-price { display: block; font-size: 0.72rem; color: var(--cyan-dark); font-weight: 700; margin-top: 0.15rem; }
 
         .qty-control { display: flex; align-items: center; gap: 0.5rem; }
         .qty-btn {
@@ -802,7 +814,7 @@ export default function FrankstatPage() {
           border-radius: 10px; padding: 1.5rem; text-align: center;
           cursor: pointer; transition: border-color 0.2s; position: relative;
         }
-        .file-upload:hover { border-color: var(--gold); }
+        .file-upload:hover { border-color: var(--cyan); }
         .file-upload input[type=file] {
           position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
         }
@@ -821,7 +833,7 @@ export default function FrankstatPage() {
 
         .submit-btn {
           width: 100%;
-          background: linear-gradient(135deg, #C19A4A 0%, #8B6914 100%);
+          background: linear-gradient(#000000 100%);
           color: var(--white);
           border: none; border-radius: 10px; padding: 1rem;
           font-family: 'DM Sans', sans-serif;
@@ -829,15 +841,15 @@ export default function FrankstatPage() {
           cursor: pointer; transition: opacity 0.2s, transform 0.15s;
           display: flex; align-items: center; justify-content: center; gap: 0.6rem;
           margin-top: 0.5rem;
-          box-shadow: 0 4px 18px rgba(193,154,74,0.42);
+          box-shadow: 0 4px 14px rgba(236,0,140,0.42);
         }
-        .submit-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 28px rgba(193,154,74,0.48); }
+        .submit-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 28px rgba(236,0,140,0.48); }
         .submit-btn:disabled { opacity: 0.42; cursor: not-allowed; transform: none; box-shadow: none; }
 
         /* Sign-in nudge for submit area */
         .signin-nudge {
-          background: rgba(193,154,74,0.08);
-          border: 1.5px solid rgba(193,154,74,0.3);
+          background: linear-gradient(135deg, rgba(0,174,239,0.07), rgba(236,0,140,0.05));
+          border: 1.5px solid rgba(0,174,239,0.25);
           border-radius: 12px; padding: 1.2rem 1.4rem;
           text-align: center; margin-top: 0.5rem;
         }
@@ -860,10 +872,10 @@ export default function FrankstatPage() {
         .auth-wall-btns { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; }
         /* Order states */
         .awaiting-box {
-          background: linear-gradient(135deg, #FFF9EC 0%, #FFFDF6 100%);
-          border: 1.5px solid rgba(193,154,74,0.35);
+          background: linear-gradient(135deg, rgba(0,174,239,0.06) 0%, rgba(236,0,140,0.04) 100%);
+          border: 1.5px solid rgba(0,174,239,0.3);
           border-radius: 14px; padding: 2rem; text-align: center;
-          box-shadow: 0 4px 20px rgba(193,154,74,0.12);
+          box-shadow: 0 4px 20px rgba(0,174,239,0.1);
         }
         .awaiting-icon { font-size: 2.5rem; margin-bottom: 0.8rem; animation: pulse 2s ease infinite; }
         @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.1);} }
@@ -874,10 +886,10 @@ export default function FrankstatPage() {
         }
         .awaiting-desc { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.7; }
         .awaiting-ref {
-          display: inline-block; background: rgba(193,154,74,0.1);
-          border: 1px solid var(--gold); border-radius: 8px;
+          display: inline-block; background: rgba(0,174,239,0.1);
+          border: 1px solid var(--cyan); border-radius: 8px;
           padding: 0.4rem 0.9rem; font-size: 0.78rem;
-          font-weight: 700; color: var(--gold);
+          font-weight: 700; color: var(--cyan-dark);
           margin: 1rem 0;
         }
 
@@ -901,14 +913,14 @@ export default function FrankstatPage() {
         /* ── REVIEWS ── */
         .reviews-section {
           padding: 5rem 5vw;
-          background: linear-gradient(135deg, #080C14 0%, #0F172A 40%, #1a1a30 70%, #080C14 100%);
+          background: linear-gradient(135deg, #050B14 0%, #090F1C 40%, #050B14 100%);
           position: relative; overflow: hidden;
         }
         .reviews-section::before {
           content: '';
           position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
           width: 600px; height: 320px;
-          background: radial-gradient(ellipse, rgba(193,154,74,0.08) 0%, transparent 70%);
+          background: radial-gradient(ellipse, rgba(0,174,239,0.08) 0%, transparent 70%);
           pointer-events: none;
         }
         .reviews-track { max-width: 640px; margin: 0 auto; }
@@ -922,30 +934,30 @@ export default function FrankstatPage() {
         /* Gold accent line at top of review card */
         .review-card::before {
           content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-          background: linear-gradient(90deg, transparent, rgba(193,154,74,0.7), transparent);
+          background: linear-gradient(90deg, #00AEEF, #EC008C, #FFE500);
         }
         @keyframes fadeUp { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
-        .review-stars { color: var(--gold); font-size: 1.1rem; margin-bottom: 1rem; letter-spacing: 2px; }
+        .review-stars { color: var(--yellow); font-size: 1.1rem; margin-bottom: 1rem; letter-spacing: 2px; }
         .review-text { font-size: 0.95rem; color: #D4C4AC; line-height: 1.8; margin-bottom: 1.5rem; font-style: italic; }
         .review-author { display: flex; align-items: center; gap: 0.9rem; }
         .review-avatar {
           width: 40px; height: 40px; border-radius: 50%;
-          background: linear-gradient(135deg, #C19A4A, #8B6914);
+          background: linear-gradient(135deg, #00AEEF, #EC008C);
           color: var(--white);
           display: flex; align-items: center; justify-content: center;
           font-family: 'Playfair Display', serif;
           font-size: 1rem; font-weight: 700; flex-shrink: 0;
-          box-shadow: 0 4px 14px rgba(193,154,74,0.45);
+          box-shadow: 0 4px 14px rgba(0,174,239,0.4);
         }
         .review-name { font-weight: 700; font-size: 0.88rem; color: var(--white); }
-        .review-role { font-size: 0.78rem; color: rgba(193,154,74,0.65); }
+        .review-role { font-size: 0.78rem; color: rgba(0,174,239,0.7); }
         .review-dots { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; }
         .dot {
           width: 8px; height: 8px; border-radius: 50%;
           background: rgba(255,255,255,0.15); cursor: pointer;
           transition: background 0.2s, transform 0.2s;
         }
-        .dot.active { background: var(--gold); transform: scale(1.35); }
+        .dot.active { background: var(--cyan); transform: scale(1.35); }
 
         /* ── FOOTER ── */
         footer {
@@ -954,14 +966,14 @@ export default function FrankstatPage() {
         }
         footer::before {
           content: '';
-          position: absolute; top: 0; left: 0; right: 0; height: 1px;
-          background: linear-gradient(90deg, transparent, var(--gold), transparent);
+          position: absolute; top: 0; left: 0; right: 0; height: 2px;
+          background: linear-gradient(90deg, #00AEEF, #EC008C, #FFE500, #EC008C, #00AEEF);
         }
 
         /* Pre-footer CTA strip */
         .footer-cta-strip {
-          background: linear-gradient(135deg, #1a2a4a 0%, #243556 40%, #1E3A5F 70%, #1a2a4a 100%);
-          border-bottom: 1px solid rgba(193,154,74,0.15);
+          background: linear-gradient(135deg, #090F1C 0%, #0A1525 50%, #090F1C 100%);
+          border-bottom: 1px solid rgba(0,174,239,0.15);
           padding: 2.5rem 5vw;
           display: flex; align-items: center; justify-content: space-between; gap: 2rem;
           position: relative; overflow: hidden;
@@ -970,7 +982,7 @@ export default function FrankstatPage() {
           content: '';
           position: absolute; top: -60%; right: -5%;
           width: 280px; height: 280px;
-          background: radial-gradient(circle, rgba(193,154,74,0.14) 0%, transparent 65%);
+          background: radial-gradient(circle, rgba(0,174,239,0.14) 0%, transparent 65%);
           pointer-events: none;
         }
         .footer-cta-text h3 {
@@ -980,7 +992,7 @@ export default function FrankstatPage() {
         }
         .footer-cta-text p { font-size: 0.85rem; color: rgba(255,255,255,0.42); }
         .footer-cta-btn {
-          background: linear-gradient(135deg, #C19A4A, #8B6914);
+          background: linear-gradient(135deg, #00AEEF, #0087C0);
           color: var(--white);
           border: none; border-radius: 8px;
           padding: 0.75rem 1.6rem;
@@ -989,7 +1001,7 @@ export default function FrankstatPage() {
           cursor: pointer; white-space: nowrap;
           transition: opacity 0.2s, transform 0.15s;
           text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;
-          flex-shrink: 0; box-shadow: 0 4px 16px rgba(193,154,74,0.45);
+          flex-shrink: 0; box-shadow: 0 4px 16px rgba(0,174,239,0.45);
         }
         .footer-cta-btn:hover { opacity: 0.9; transform: translateY(-1px); }
 
@@ -998,7 +1010,7 @@ export default function FrankstatPage() {
         .footer-grid {
           display: grid; grid-template-columns: 2fr 1fr 1fr 1.4fr;
           gap: 3rem; padding-bottom: 3rem;
-          border-bottom: 1px solid #1C1208;
+          border-bottom: 1px solid rgba(255,255,255,0.04);
         }
         .footer-brand-name {
           font-family: 'Playfair Display', serif;
@@ -1006,9 +1018,9 @@ export default function FrankstatPage() {
           color: var(--white); letter-spacing: -0.02em;
           margin-bottom: 0.75rem;
         }
-        .footer-brand-name span { color: var(--gold); }
+        .footer-brand-name span { color: var(--cyan); }
         .footer-brand-desc {
-          font-size: 0.83rem; color: #5C4A38;
+          font-size: 0.83rem; color: #FFFFFF;
           line-height: 1.75; margin-bottom: 1.5rem; max-width: 240px;
         }
 
@@ -1016,48 +1028,48 @@ export default function FrankstatPage() {
         .footer-social { display: flex; gap: 0.55rem; flex-wrap: wrap; }
         .social-btn {
           width: 38px; height: 38px; border-radius: 10px;
-          background: rgba(255,255,255,0.04);
+          background: rgba(255,255,255,0.03);
           border: 1px solid rgba(255,255,255,0.06);
           display: flex; align-items: center; justify-content: center;
           cursor: pointer; transition: background 0.2s, border-color 0.2s, transform 0.15s;
-          text-decoration: none; color: #7A6048;
+          text-decoration: none; color: #FFFFFF;
         }
         .social-btn svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
         .social-btn:hover {
-          background: rgba(193,154,74,0.15);
-          border-color: rgba(193,154,74,0.35);
-          color: var(--gold); transform: translateY(-2px);
+          background: rgba(0,174,239,0.15);
+          border-color: rgba(0,174,239,0.35);
+          color: var(--cyan); transform: translateY(-2px);
         }
         .social-btn.whatsapp:hover { background: rgba(37,211,102,0.12); border-color: rgba(37,211,102,0.3); color: #25D366; }
-        .social-btn.tiktok:hover  { background: rgba(255,0,80,0.1);    border-color: rgba(255,0,80,0.25);   color: #ff0050; }
+        .social-btn.tiktok:hover  { background: rgba(236,0,140,0.1); border-color: rgba(236,0,140,0.3); color: var(--magenta); }
 
         .footer-col-title {
           font-size: 0.7rem; font-weight: 700;
           letter-spacing: 0.18em; text-transform: uppercase;
-          color: #4A3820; margin-bottom: 1.1rem;
+          color: rgba(0,174,239,0.6); margin-bottom: 1.1rem;
           display: flex; align-items: center; gap: 0.5rem;
         }
         .footer-col-title::after {
           content: ''; display: block; height: 1px; width: 24px;
-          background: var(--gold); opacity: 0.4;
+          background: linear-gradient(90deg, var(--cyan), var(--magenta)); opacity: 0.5;
         }
         .footer-links { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; }
         .footer-links li a {
-          font-size: 0.84rem; color: #6B5440;
+          font-size: 0.84rem; color: #FFFFFF;
           cursor: pointer; text-decoration: none;
           transition: color 0.2s, padding-left 0.2s;
           display: inline-block;
         }
-        .footer-links li a:hover { color: var(--gold); padding-left: 4px; }
+        .footer-links li a:hover { color: var(--cyan); padding-left: 4px; }
         .footer-contact-item {
           display: flex; align-items: flex-start; gap: 0.75rem;
-          margin-bottom: 0.75rem; font-size: 0.83rem; color: #6B5440;
+          margin-bottom: 0.75rem; font-size: 0.83rem; color: #FFFFFF;
           line-height: 1.5;
         }
         .footer-contact-icon {
           width: 28px; height: 28px; border-radius: 7px;
-          background: rgba(193,154,74,0.08);
-          border: 1px solid rgba(193,154,74,0.15);
+          background: rgba(0,174,239,0.08);
+          border: 1px solid rgba(0,174,239,0.15);
           display: flex; align-items: center; justify-content: center;
           font-size: 0.8rem; flex-shrink: 0; margin-top: 1px;
         }
@@ -1068,15 +1080,15 @@ export default function FrankstatPage() {
           display: flex; justify-content: space-between; align-items: center;
           flex-wrap: wrap; gap: 0.75rem;
         }
-        .footer-copy { font-size: 0.76rem; color: #3A2C1C; }
+        .footer-copy { font-size: 0.76rem; color: #FFFFFF; }
         .footer-bottom-links { display: flex; gap: 1.4rem; }
         .footer-bottom-links a {
-          font-size: 0.76rem; color: #3A2C1C;
+          font-size: 0.76rem; color: #FFFFFF;
           text-decoration: none; cursor: pointer;
           transition: color 0.2s;
         }
-        .footer-bottom-links a:hover { color: #6B5440; }
-        .footer-made { font-size: 0.76rem; color: #2A1E10; }
+        .footer-bottom-links a:hover { color: #FFFFFF; }
+        .footer-made { font-size: 0.76rem; color: #FFFFFF; }
 
         /* ── RESPONSIVE ── */
         @media (max-width: 1024px) {
@@ -1105,8 +1117,8 @@ export default function FrankstatPage() {
 
       {/* ── NAV ── */}
       <nav className="nav">
-        <a className="nav-logo" onClick={() => scrollTo("home")} style={{ cursor: "pointer" }}>
-          FRANK<span>STAT</span>
+        <a onClick={() => scrollTo("home")} style={{ cursor: "pointer", display: "flex", alignItems: "center", flexShrink: 0 }}>
+          <img src="/logo.png" alt="Frankstat Logo" style={{ height: "42px", width: "auto", objectFit: "contain" }} />
         </a>
         <ul className="nav-links">
           {["home", "services", "portfolio", "order", "contact"].map((s) => (
@@ -1188,22 +1200,22 @@ export default function FrankstatPage() {
       </div>
 
       {/* ── OFFER BANNER ── */}
-      <div className="offer-banner">
-        <div className="offer-ticker">
-          <span>🎉 FREE DELIVERY on orders above KES 5,000 within Nairobi</span>
-          <span>⚡ 24-Hour Turnaround on Banners &amp; Posters</span>
-          <span>🖨️ 10% OFF first order – use code FRANKSTAT10</span>
-          <span>🎉 FREE DELIVERY on orders above KES 5,000 within Nairobi</span>
-          <span>⚡ 24-Hour Turnaround on Banners &amp; Posters</span>
-          <span>🖨️ 10% OFF first order – use code FRANKSTAT10</span>
+      {banner?.isActive && banner.items.length > 0 && (
+        <div className="offer-banner">
+          <div className="offer-ticker">
+            {/* Duplicate items for seamless infinite loop */}
+            {[...banner.items, ...banner.items].map((text, i) => (
+              <span key={i}>{text}</span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── HERO ── */}
       <section id="home" className="hero">
         <div className="hero-text">
           <span className="hero-eyebrow">Premium Printing in Nairobi</span>
-          <h1>Print that <em>Commands</em> Attention.</h1>
+          <h1><em>Print that Commands Attention.</em> </h1>
           <p className="hero-desc">
             From vinyl banners to 3D signage, sublimation to business cards —
             Frankstat delivers sharp, vibrant, professional prints that make your brand impossible to ignore.
@@ -1230,10 +1242,11 @@ export default function FrankstatPage() {
         <div className="hero-visual">
           <div className="hero-img-wrap">
             <div className="hero-img-placeholder">
-              <div className="hero-img-icon">🖨️</div>
-              <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "1rem", color: "rgba(255,255,255,0.45)", fontStyle: "italic" }}>
-                Your Brand, Printed Perfectly
-              </p>
+              <img
+                src="/logo.png"
+                alt="Frankstat"
+                style={{ width: "75%", maxWidth: "320px", height: "auto", objectFit: "contain", filter: "drop-shadow(0 4px 24px rgba(193,154,74,0.5))" }}
+              />
             </div>
           </div>
           <div className="hero-badge">
@@ -1304,7 +1317,11 @@ export default function FrankstatPage() {
           {PORTFOLIO.map((item, i) => (
             <div key={i} className="portfolio-card">
               <div className="portfolio-bg" style={{ background: `linear-gradient(135deg,${item.color}22,${item.color}55)` }}>
-                {SERVICES.find((s) => s.name.toLowerCase().includes(item.category.split(" ")[0].toLowerCase()))?.icon ?? "🖼️"}
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                />
               </div>
               <div className="portfolio-overlay">
                 <div className="portfolio-overlay-cat">{item.category}</div>
@@ -1709,7 +1726,7 @@ export default function FrankstatPage() {
 
             {/* Brand + social */}
             <div className="footer-brand-col">
-              <div className="footer-brand-name">FRANK<span>STAT</span></div>
+              <img src="/logo.png" alt="Frankstat" style={{ height: "48px", width: "auto", objectFit: "contain", marginBottom: "0.75rem" }} />
               <p className="footer-brand-desc">
                 Nairobi&apos;s trusted printing partner for businesses, events &amp; entrepreneurs.
                 Premium prints. Fast turnaround. Fair pricing.
@@ -1766,10 +1783,10 @@ export default function FrankstatPage() {
             <div>
               <div className="footer-col-title">Contact Us</div>
               {[
-                { icon: "📍", text: "Westlands, Nairobi, Kenya" },
+                { icon: "📍", text: "Odeon, Nairobi" },
                 { icon: "📞", text: "+254 700 000 000" },
                 { icon: "📧", text: "hello@frankstat.co.ke" },
-                { icon: "🕐", text: "Mon–Sat · 8 am – 7 pm" },
+                { icon: "🕐", text: "Mon–Sat · 8am – 8pm" },
               ].map((c) => (
                 <div key={c.text} className="footer-contact-item">
                   <span className="footer-contact-icon">{c.icon}</span>
@@ -1783,10 +1800,10 @@ export default function FrankstatPage() {
 
         {/* Bottom bar */}
         <div className="footer-bottom">
-          <div className="footer-copy">© {new Date().getFullYear()} Frankstat Printing Solutions. All rights reserved.</div>
+          <div className="footer-copy" suppressHydrationWarning>© {new Date().getFullYear()} Frankstat Printing Solutions. All rights reserved.</div>
           <div className="footer-bottom-links">
-            <a>Privacy Policy</a>
-            <a>Terms of Service</a>
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/terms">Terms of Service</a>
           </div>
           <div className="footer-made">Made with ❤️ in Nairobi</div>
         </div>

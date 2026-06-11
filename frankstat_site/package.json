@@ -1,56 +1,64 @@
 {
-  "name": "frankstat",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+  "name": "frankstat_site",
+  "version": "1.0.0",
+  "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
   },
+  "scripts": {
+    "dev": "next dev"
+  },
+  "prisma": {
+  "seed": "tsx prisma/seed.ts"
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
     "@paralleldrive/cuid2": "^3.3.0",
-    "@prisma/client": "^6.19.2",
-    "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.106.1",
+    "@prisma/client": "^6.19.3",
+    "@supabase/ssr": "github:supabase/ssr",
     "@vercel/blob": "^2.4.0",
-    "ajv": "^8.18.0",
-    "axios": "^1.16.1",
+    "ajv": "^8.20.0",
+    "axios": "^1.17.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "cookie": "^1.1.1",
     "cross-spawn": "^7.0.6",
     "cuid": "^3.0.0",
-    "inquirer": "^13.2.5",
+    "inquirer": "^14.0.2",
     "jose": "^6.2.3",
+    "json5": "^2.2.3",
     "jsonwebtoken": "^9.0.3",
-    "minimatch": "^10.2.2",
-    "next": "^16.2.6",
+    "minimatch": "^10.2.5",
+    "next": "^16.2.9",
     "next-auth": "^4.24.14",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.13",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
+    "papaparse": "^5.5.3",
+    "postgres": "^3.4.9",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "table": "^6.9.0",
-    "tmp": "^0.2.5",
-    "zod": "^4.3.6"
+    "tmp": "^0.2.7",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.3.0",
     "@types/bcrypt": "^6.0.0",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^20.19.41",
+    "@types/node": "^20.19.42",
     "@types/nodemailer": "^7.0.11",
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "eslint": "^10.0.0",
+    "eslint": "^10.4.1",
     "eslint-config-next": "^0.2.4",
-    "prisma": "^6.19.2",
-    "tailwindcss": "^4",
+    "prisma": "^6.19.3",
+    "supabase": "^2.105.0",
+    "tailwindcss": "^4.3.0",
     "ts-node": "^10.9.2",
-    "tsx": "^4.22.3",
-    "typescript": "^5"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "tsx": "^4.22.4",
+    "typescript": "^5.9.3"
   }
 }

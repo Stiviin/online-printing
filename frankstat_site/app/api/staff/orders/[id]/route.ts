@@ -23,6 +23,7 @@ import { NextResponse } from "next/server";
 import { z, ZodError } from "zod";
 import prisma from "@/lib/prisma";
 import { requireStaff, audit } from "@/lib/adminGuard";
+import { sendOrderReadyEmail } from "@/lib/email";
 
 // ── Valid status transitions for staff ────────────────────────────────────────
 // Staff may only move an order FORWARD through production.
@@ -170,7 +171,7 @@ export async function PATCH(
       // Notify the customer
       const fullOrder = await tx.orders.findUnique({
         where: { id },
-        select: { userId: true, id: true },
+        select: { userId: true, id: true, serviceName: true, user: { select: { email: true, fullName: true } } },
       });
       if (fullOrder?.userId) {
         const statusMessages: Record<string, { title: string; body: string; type: any }> = {
@@ -198,6 +199,23 @@ export async function PATCH(
 
     return o;
   });
+
+  // Send "order ready" email when status moves to READY (fire-and-forget)
+  if (fields.status === "READY" && order.status !== "READY") {
+    prisma.orders.findUnique({
+      where: { id },
+      select: { serviceName: true, user: { select: { email: true, fullName: true } } },
+    }).then(o => {
+      if (o?.user?.email) {
+        sendOrderReadyEmail({
+          to:          o.user.email,
+          fullName:    o.user.fullName,
+          orderId:     id,
+          serviceName: o.serviceName,
+        }).catch(e => console.error("[order-ready email]", e));
+      }
+    }).catch(e => console.error("[order-ready email fetch]", e));
+  }
 
   // Audit log (non-critical, outside transaction)
   audit({ adminId: session.sub, action: "ORDER_UPDATED", entity: "Order", entityId: id, metadata: { changes: updateData, previousStatus: order.status } });

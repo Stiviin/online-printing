@@ -27,6 +27,7 @@ import {
   VERIFY_TOKEN_TTL_MS,
 } from "@/lib/auth";
 import { sendVerificationEmail } from "@/lib/email";
+import { rateLimit, clientIp } from "@/lib/rateLimit";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Input schema
@@ -76,6 +77,15 @@ const registerSchema = z.object({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
+  // Rate limit: 5 registrations per hour per IP
+  const rl = rateLimit(`register:${clientIp(req)}`, { limit: 5, windowMs: 60 * 60_000 });
+  if (rl.limited) {
+    return NextResponse.json(
+      { error: "Too many sign-up attempts. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } }
+    );
+  }
+
   try {
     // 1. Parse & validate body
     const json = await req.json().catch(() => null);

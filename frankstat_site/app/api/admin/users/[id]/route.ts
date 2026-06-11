@@ -5,6 +5,7 @@
  */
 import { NextResponse } from "next/server";
 import { z, ZodError } from "zod";
+import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { requireAdmin, audit } from "@/lib/adminGuard";
 import { hashPassword } from "@/lib/auth";
@@ -38,7 +39,10 @@ export async function GET(_req: Request, { params }: Ctx) {
 const patchSchema = z.object({
   fullName:   z.string().min(2).max(100).trim().optional(),
   email:      z.string().email().transform(s => s.toLowerCase().trim()).optional(),
-  phone:      z.string().nullable().optional(),
+  phone:      z.string()
+    .regex(/^(?:254|\+254|0)?(7|1)(?:(?:[0-9][0-9])|(?:0[0-8]))[0-9]{6}$/, "Invalid Kenyan phone number")
+    .nullable()
+    .optional(),
   role:       z.enum(["CUSTOMER","STAFF","ADMIN"]).optional(),
   isActive:   z.boolean().optional(),
   isVerified: z.boolean().optional(),
@@ -93,12 +97,15 @@ export async function PATCH(req: Request, { params }: Ctx) {
     return NextResponse.json({ ok: true, user: updated });
   } catch (err) {
     if (err instanceof ZodError) return NextResponse.json({ error: err.issues[0]?.message }, { status: 422 });
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return NextResponse.json({ error: "Email already in use." }, { status: 409 });
+    }
     console.error("[admin/users PATCH]", err);
     return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
   }
 }
 
-// ── DELETE (soft) ─────────────────────────────────────────────────────────────
+// ── DELETE (hard) ─────────────────────────────────────────────────────────────
 export async function DELETE(req: Request, { params }: Ctx) {
   const guard = await requireAdmin();
   if (!guard.ok) return guard.response;
@@ -111,9 +118,8 @@ export async function DELETE(req: Request, { params }: Ctx) {
   const user = await prisma.user.findUnique({ where: { id }, select: { id: true, email: true, role: true } });
   if (!user) return NextResponse.json({ error: "User not found." }, { status: 404 });
 
-  // Soft-delete — preserve all relational data
-  await prisma.user.update({ where: { id }, data: { isActive: false } });
-  await audit({ adminId: guard.session.sub, action: "USER_DEACTIVATED", entity: "User", entityId: id, metadata: { email: user.email }, req });
+  await prisma.user.delete({ where: { id } });
+  await audit({ adminId: guard.session.sub, action: "USER_DELETED", entity: "User", entityId: id, metadata: { email: user.email }, req });
 
   return NextResponse.json({ ok: true });
 }

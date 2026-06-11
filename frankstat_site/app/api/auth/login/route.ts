@@ -23,6 +23,7 @@ import {
   signToken,
   createAuthCookie,
 } from "@/lib/auth";
+import { rateLimit, clientIp } from "@/lib/rateLimit";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Input schema
@@ -49,6 +50,15 @@ const INVALID_CREDENTIALS = "Incorrect email or password.";
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
+  // Rate limit: 10 attempts per 15 minutes per IP
+  const rl = rateLimit(`login:${clientIp(req)}`, { limit: 10, windowMs: 15 * 60_000 });
+  if (rl.limited) {
+    return NextResponse.json(
+      { error: "Too many login attempts. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } }
+    );
+  }
+
   try {
     // 1. Parse & validate
     const json = await req.json().catch(() => null);

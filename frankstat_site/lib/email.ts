@@ -165,6 +165,55 @@ export async function sendVerificationEmail(opts: {
 }
 
 /**
+ * Send "order ready for pickup" notification.
+ */
+export async function sendOrderReadyEmail(opts: {
+  to: string;
+  fullName: string;
+  orderId: string;
+  serviceName: string;
+}): Promise<void> {
+  const { to, fullName, orderId, serviceName } = opts;
+  const firstName = fullName.split(" ")[0];
+  const shortId = orderId.slice(-8).toUpperCase();
+  const dashboardLink = `${APP_URL}/dashboard`;
+
+  const body = `
+    <h2 style="margin:0 0 8px;font-size:22px;font-weight:900;
+               color:#1C1410;font-family:Georgia,serif;">
+      Your order is ready, ${firstName}!
+    </h2>
+    <p style="margin:0 0 16px;font-size:15px;color:#5C4A38;line-height:1.7;">
+      Great news — your <strong style="color:#1C1410;">${serviceName}</strong> order
+      <strong style="color:#1C1410;">#${shortId}</strong> has passed quality check
+      and is ready for collection at our Nairobi office.
+    </p>
+    <p style="margin:0;font-size:15px;color:#5C4A38;line-height:1.7;">
+      Please bring your order reference number when you come to pick it up.
+      If you opted for delivery, your order will be dispatched shortly.
+    </p>
+    ${ctaButton(dashboardLink, "View My Orders →")}
+    <p style="margin:24px 0 0;font-size:13px;color:#5C4A38;
+              background:#FFFBF0;border-radius:6px;padding:12px 14px;
+              border-left:3px solid #C19A4A;">
+      <strong>Order reference:</strong> #${shortId}<br/>
+      <strong>Service:</strong> ${serviceName}
+    </p>
+    <p style="margin:20px 0 0;font-size:12px;color:#B0A090;">
+      Questions? Reply to this email or visit your dashboard to contact support.
+    </p>
+  `;
+
+  await getTransporter().sendMail({
+    from: FROM,
+    to,
+    subject: `Your Frankstat order #${shortId} is ready for pickup`,
+    text: `Hi ${firstName}, your ${serviceName} order #${shortId} is ready for collection. Visit your dashboard: ${dashboardLink}`,
+    html: emailShell(`Order #${shortId} is ready`, body),
+  });
+}
+
+/**
  * Send the password-reset link.
  */
 export async function sendPasswordResetEmail(opts: {

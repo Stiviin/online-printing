@@ -31,12 +31,12 @@ const BALANCE_ALLOWED_STATUSES = ["IN_PRODUCTION", "QUALITY_CHECK", "READY", "DE
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSessionUser();
   if (!session) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
-  const orderId = params.id;
+  const { id: orderId } = await params;
 
   // Fetch order with existing payments
   const order = await prisma.orders.findUnique({

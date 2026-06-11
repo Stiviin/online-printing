@@ -31,9 +31,9 @@ export const VERIFY_TOKEN_TTL_MS = 1000 * 60 * 60 * 24;
 /** Password reset token lifetime – 1 hour */
 export const RESET_TOKEN_TTL_MS = 1000 * 60 * 60;
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "change-me-in-production-must-be-at-least-32-chars!!"
-);
+const _jwtSecretValue = process.env.JWT_SECRET;
+if (!_jwtSecretValue) throw new Error("JWT_SECRET environment variable is not set. Add it to .env");
+const JWT_SECRET = new TextEncoder().encode(_jwtSecretValue);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES

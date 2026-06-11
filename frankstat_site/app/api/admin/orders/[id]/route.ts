@@ -96,3 +96,28 @@ export async function PATCH(req: Request, { params }: Ctx) {
     return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
   }
 }
+
+export async function DELETE(_req: Request, { params }: Ctx) {
+  const guard = await requireAdmin();
+  if (!guard.ok) return guard.response;
+
+  const { id } = await params;
+
+  const order = await prisma.orders.findUnique({ where: { id }, select: { id: true, status: true } });
+  if (!order) return NextResponse.json({ error: "Order not found." }, { status: 404 });
+
+  const completedPayments = await prisma.payment.count({
+    where: { orderId: id, status: { in: ["COMPLETED", "REFUNDED"] } },
+  });
+  if (completedPayments > 0)
+    return NextResponse.json({ error: "Cannot delete an order with completed payments. Cancel or refund it instead." }, { status: 422 });
+
+  await prisma.$transaction(async tx => {
+    await tx.payment.deleteMany({ where: { orderId: id } });
+    await tx.orders.delete({ where: { id } });
+  });
+
+  await audit({ adminId: guard.session.sub, action: "ORDER_DELETED", entity: "Order", entityId: id, metadata: { status: order.status }, req: _req });
+
+  return NextResponse.json({ ok: true });
+}
