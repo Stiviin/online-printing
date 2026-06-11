@@ -7,7 +7,8 @@
     "lib": "lib"
   },
   "scripts": {
-    "dev": "next dev"
+    "dev": "next dev",
+    "test:supabase": "node --env-file=.env ./scripts/test-supabase.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

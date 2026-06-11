@@ -191,9 +191,9 @@ model Notification {
 model SiteBanner {
   id        String   @id @default(cuid())
   isActive  Boolean  @default(false)
-  items     Json     // string[] — the ticker messages
+  items     Json
   updatedAt DateTime @updatedAt
-  updatedBy String?  // userId of last admin who saved
+  updatedBy String?
 }
 
 model AuditLog {
